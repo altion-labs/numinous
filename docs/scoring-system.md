@@ -26,7 +26,7 @@ This means the full daily emission is split across:
 
 Each pool is winner-takes-all.
 
-For a given pool, the miner with the best ranking receives the full allocation for that pool. Using the ranking notation `r` and assuming a ranking on the metrics the final payout for miner `m` is:
+For a given pool, the miner with the best ranking receives the full allocation for that pool. Using the ranking notation `r`, the final payout for miner `m` is:
 
 ```text
 R(m) =
