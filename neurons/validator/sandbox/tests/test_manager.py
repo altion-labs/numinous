@@ -9,6 +9,7 @@ import docker.errors
 import pytest
 import requests.exceptions
 
+from neurons.validator.models.track import TrackEnum
 from neurons.validator.sandbox.manager import SandboxManager
 from neurons.validator.sandbox.models import SandboxState
 
@@ -262,3 +263,90 @@ class TestSigningProxyLifecycle:
         assert call_kwargs["ulimits"][0]["Name"] == "nofile"
         assert call_kwargs["ulimits"][0]["Soft"] == 65536
         assert call_kwargs["ulimits"][0]["Hard"] == 65536
+
+
+class TestRunRegistry:
+    @patch("neurons.validator.sandbox.manager.build_docker_image")
+    @patch("neurons.validator.sandbox.manager.image_exists", return_value=True)
+    def test_register_run_creates_file(
+        self, mock_image_exists, mock_build_image, mock_wallet, mock_logger, mock_docker_setup
+    ):
+        manager = SandboxManager(mock_wallet, "http://gateway", mock_logger)
+        manager.register_run("run-123", TrackEnum.SIGNAL)
+
+        registry_file = manager.run_registry_dir / "run-123"
+        assert registry_file.exists()
+        assert registry_file.read_text() == "SIGNAL"
+
+    @patch("neurons.validator.sandbox.manager.build_docker_image")
+    @patch("neurons.validator.sandbox.manager.image_exists", return_value=True)
+    def test_register_run_main_track(
+        self, mock_image_exists, mock_build_image, mock_wallet, mock_logger, mock_docker_setup
+    ):
+        manager = SandboxManager(mock_wallet, "http://gateway", mock_logger)
+        manager.register_run("run-456", TrackEnum.MAIN)
+
+        registry_file = manager.run_registry_dir / "run-456"
+        assert registry_file.exists()
+        assert registry_file.read_text() == "MAIN"
+
+    @patch("neurons.validator.sandbox.manager.build_docker_image")
+    @patch("neurons.validator.sandbox.manager.image_exists", return_value=True)
+    def test_unregister_run_removes_file(
+        self, mock_image_exists, mock_build_image, mock_wallet, mock_logger, mock_docker_setup
+    ):
+        manager = SandboxManager(mock_wallet, "http://gateway", mock_logger)
+        manager.register_run("run-789", TrackEnum.SIGNAL)
+
+        registry_file = manager.run_registry_dir / "run-789"
+        assert registry_file.exists()
+
+        manager.unregister_run("run-789")
+        assert not registry_file.exists()
+
+    @patch("neurons.validator.sandbox.manager.build_docker_image")
+    @patch("neurons.validator.sandbox.manager.image_exists", return_value=True)
+    def test_unregister_nonexistent_run_no_error(
+        self, mock_image_exists, mock_build_image, mock_wallet, mock_logger, mock_docker_setup
+    ):
+        manager = SandboxManager(mock_wallet, "http://gateway", mock_logger)
+        manager.unregister_run("nonexistent-run")
+
+    @patch("neurons.validator.sandbox.manager.build_docker_image")
+    @patch("neurons.validator.sandbox.manager.image_exists", return_value=True)
+    def test_multiple_concurrent_registrations(
+        self, mock_image_exists, mock_build_image, mock_wallet, mock_logger, mock_docker_setup
+    ):
+        manager = SandboxManager(mock_wallet, "http://gateway", mock_logger)
+
+        manager.register_run("run-a", TrackEnum.MAIN)
+        manager.register_run("run-b", TrackEnum.SIGNAL)
+        manager.register_run("run-c", TrackEnum.SIGNAL)
+
+        assert (manager.run_registry_dir / "run-a").read_text() == "MAIN"
+        assert (manager.run_registry_dir / "run-b").read_text() == "SIGNAL"
+        assert (manager.run_registry_dir / "run-c").read_text() == "SIGNAL"
+
+    @patch("neurons.validator.sandbox.manager.build_docker_image")
+    @patch("neurons.validator.sandbox.manager.image_exists", return_value=True)
+    def test_proxy_container_gets_registry_volume(
+        self, mock_image_exists, mock_build_image, mock_wallet, mock_logger, mock_docker_setup
+    ):
+        manager = SandboxManager(mock_wallet, "http://gateway", mock_logger)
+
+        call_kwargs = mock_docker_setup.containers.run.call_args[1]
+        volumes = call_kwargs["volumes"]
+        assert str(manager.run_registry_dir) in volumes
+        assert volumes[str(manager.run_registry_dir)]["bind"] == "/run_registry"
+        assert volumes[str(manager.run_registry_dir)]["mode"] == "ro"
+
+    @patch("neurons.validator.sandbox.manager.build_docker_image")
+    @patch("neurons.validator.sandbox.manager.image_exists", return_value=True)
+    def test_proxy_container_gets_registry_env_var(
+        self, mock_image_exists, mock_build_image, mock_wallet, mock_logger, mock_docker_setup
+    ):
+        SandboxManager(mock_wallet, "http://gateway", mock_logger)
+
+        call_kwargs = mock_docker_setup.containers.run.call_args[1]
+        environment = call_kwargs["environment"]
+        assert environment["RUN_REGISTRY_DIR"] == "/run_registry"

@@ -8,6 +8,7 @@ from bittensor import AsyncSubtensor
 
 from neurons.validator.db.operations import DatabaseOperations
 from neurons.validator.models.agent_runs import AgentRunsModel, AgentRunStatus
+from neurons.validator.models.event import EventsModel
 from neurons.validator.models.miner_agent import MinerAgentsModel
 from neurons.validator.models.numinous_client import CreateAgentRunRequest
 from neurons.validator.models.prediction import PredictionsModel
@@ -131,7 +132,7 @@ class RunAgents(AbstractTask):
         )
 
         events = await self.db_operations.get_events_to_predict()
-        if not len(events):
+        if not events:
             self.logger.debug("No events to predict")
             return
 
@@ -266,6 +267,7 @@ class RunAgents(AbstractTask):
                 unique_event_id=event_id,
                 miner_uid=agent.miner_uid,
                 miner_hotkey=agent.miner_hotkey,
+                track=agent.track,
                 latest_prediction=clipped_value,
                 interval_start_minutes=interval_start_minutes,
                 interval_agg_prediction=clipped_value,
@@ -413,33 +415,22 @@ class RunAgents(AbstractTask):
             agent_version_id=agent.version_id,
             miner_uid=agent.miner_uid,
             miner_hotkey=agent.miner_hotkey,
+            track=agent.track,
             status=status,
             exported=False,
             is_final=is_final,
         )
 
     async def execute_agent_for_event(
-        self,
-        event_id: str,
-        agent: MinerAgentsModel,
-        event_tuple: tuple,
-        interval_start_minutes: int,
+        self, event: EventsModel, agent: MinerAgentsModel, interval_start_minutes: int
     ) -> None:
-        (
-            unique_event_id_to_remove,
-            external_event_id,
-            market_type_to_remove,
-            event_type,
-            title,
-            description,
-            cutoff,
-            metadata,
-        ) = event_tuple
+        event_id = event.unique_event_id
 
         try:
             create_run_request = CreateAgentRunRequest(
                 miner_uid=agent.miner_uid,
                 miner_hotkey=agent.miner_hotkey,
+                track=agent.track,
                 vali_uid=self.validator_uid,
                 vali_hotkey=self.validator_hotkey,
                 event_id=event_id,
@@ -449,6 +440,8 @@ class RunAgents(AbstractTask):
             create_run_response = await self.api_client.create_agent_run(create_run_request)
             run_id = str(create_run_response.run_id)
 
+            self.sandbox_manager.register_run(run_id, agent.track)
+
             self.logger.debug(
                 "Created agent run via API",
                 extra={
@@ -456,6 +449,7 @@ class RunAgents(AbstractTask):
                     "agent_version_id": agent.version_id,
                     "miner_uid": agent.miner_uid,
                     "run_id": run_id,
+                    "track": agent.track.value,
                 },
             )
         except Exception as e:
@@ -477,21 +471,27 @@ class RunAgents(AbstractTask):
             )
             return
 
+        title = event.title
+        description = event.description
+
         # Backward compatibility: if title is missing/empty, try to parse it from description
         if not title:
             title, description = self.parse_event_description(description)
-        metadata = json.loads(metadata) if isinstance(metadata, str) else metadata
+        metadata = json.loads(event.metadata) if isinstance(event.metadata, str) else event.metadata
 
         event_data = {
-            "event_id": external_event_id,
-            "event_type": event_type,
+            "event_id": event.event_id,
+            "event_type": event.event_type,
             "title": title,
             "description": description,
-            "cutoff": cutoff,
+            "cutoff": event.cutoff.isoformat(),
             "metadata": metadata,
         }
 
-        result = await self.run_sandbox(agent_code, event_data, run_id)
+        try:
+            result = await self.run_sandbox(agent_code, event_data, run_id)
+        finally:
+            self.sandbox_manager.unregister_run(run_id)
 
         if result is None:
             logs = "Sandbox timeout - no logs"
@@ -547,13 +547,16 @@ class RunAgents(AbstractTask):
             )
 
     async def execute_all(
-        self, events: List[tuple], agents: List[MinerAgentsModel], interval_start_minutes: int
+        self, events: List[EventsModel], agents: List[MinerAgentsModel], interval_start_minutes: int
     ) -> None:
         semaphore = asyncio.Semaphore(self.max_concurrent_sandboxes)
 
         tasks = []
         for event in events:
             for agent in agents:
+                if agent.track not in event.tracks:
+                    continue
+
                 task = self.execute_with_semaphore(semaphore, event, agent, interval_start_minutes)
                 tasks.append(task)
 
@@ -568,6 +571,7 @@ class RunAgents(AbstractTask):
             unique_event_id=existing_prediction.unique_event_id,
             miner_uid=existing_prediction.miner_uid,
             miner_hotkey=existing_prediction.miner_hotkey,
+            track=existing_prediction.track,
             latest_prediction=existing_prediction.latest_prediction,
             interval_start_minutes=interval_start_minutes,
             interval_agg_prediction=existing_prediction.latest_prediction,
@@ -581,12 +585,12 @@ class RunAgents(AbstractTask):
     async def execute_with_semaphore(
         self,
         semaphore: asyncio.Semaphore,
-        event: tuple,
+        event: EventsModel,
         agent: MinerAgentsModel,
         interval_start_minutes: int,
     ) -> None:
         async with semaphore:
-            event_id = event[0]
+            event_id = event.unique_event_id
 
             # Check if prediction exists for this (event, miner) in ANY interval
             existing_prediction = (
@@ -594,6 +598,7 @@ class RunAgents(AbstractTask):
                     unique_event_id=event_id,
                     miner_uid=agent.miner_uid,
                     miner_hotkey=agent.miner_hotkey,
+                    track=agent.track,
                 )
             )
 
@@ -643,8 +648,7 @@ class RunAgents(AbstractTask):
                 return
 
             await self.execute_agent_for_event(
-                event_id=event_id,
+                event=event,
                 agent=agent,
-                event_tuple=event,
                 interval_start_minutes=interval_start_minutes,
             )

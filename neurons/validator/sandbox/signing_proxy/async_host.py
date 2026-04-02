@@ -1,11 +1,18 @@
 import asyncio
 import base64
+import json
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 
 import httpx
 from aiohttp import web
 from bittensor_wallet import Wallet
+
+try:
+    from track_config import TRACK_ALLOWED_PREFIXES
+except ImportError:
+    from neurons.validator.sandbox.signing_proxy.track_config import TRACK_ALLOWED_PREFIXES
 
 
 class AsyncValidatorSigningProxy:
@@ -18,11 +25,78 @@ class AsyncValidatorSigningProxy:
         self.client = None
         self.client_lock = asyncio.Lock()
 
+        registry_dir = os.environ.get("RUN_REGISTRY_DIR")
+        self.run_registry_dir = Path(registry_dir) if registry_dir else None
+        self.track_cache: dict[str, str] = {}
+
+    def _get_track(self, run_id: str) -> str | None:
+        cached = self.track_cache.get(run_id)
+        if cached is not None:
+            return cached
+
+        if not self.run_registry_dir:
+            return None
+
+        registry_file = self.run_registry_dir / run_id
+        try:
+            track = registry_file.read_text().strip()
+            self.track_cache[run_id] = track
+            return track
+        except FileNotFoundError:
+            return None
+
+    def _check_track_access(self, request_path: str, body: bytes) -> web.Response | None:
+        if not self.run_registry_dir:
+            return None
+
+        if not body:
+            return None
+
+        try:
+            parsed = json.loads(body)
+            run_id = parsed.get("run_id")
+        except (json.JSONDecodeError, AttributeError):
+            return None
+
+        if not run_id:
+            return None
+
+        run_id = str(run_id)
+        track = self._get_track(run_id)
+
+        if not track:
+            return None
+
+        allowed_prefixes = TRACK_ALLOWED_PREFIXES.get(track)
+        if not allowed_prefixes:
+            return None
+
+        if "*" in allowed_prefixes:
+            return None
+
+        for prefix in allowed_prefixes:
+            if request_path.startswith(prefix):
+                return None
+
+        print(
+            f"[SIGNING-PROXY] BLOCKED: {request_path} not allowed for {track} track "
+            f"(run_id={run_id})",
+            flush=True,
+        )
+        return web.Response(
+            status=403,
+            text=f"Endpoint {request_path} is not available for {track} track agents",
+        )
+
     async def handle_request(self, request: web.Request) -> web.Response:
         request_start = asyncio.get_event_loop().time()
 
         try:
             body = await request.read()
+
+            blocked = self._check_track_access(request.path, body)
+            if blocked is not None:
+                return blocked
 
             try:
                 signature = self.wallet.hotkey.sign(body)

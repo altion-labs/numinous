@@ -3,11 +3,14 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from neurons.validator.models.track import TrackEnum
+
 
 class MinerAgentsModel(BaseModel):
     version_id: str
     miner_uid: int
     miner_hotkey: str
+    track: TrackEnum
     agent_name: str
     version_number: int
     file_path: str

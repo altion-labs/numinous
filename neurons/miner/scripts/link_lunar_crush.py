@@ -17,7 +17,7 @@ from neurons.validator.models.track import TrackEnum
 console = Console()
 
 
-def link_chutes_impl(
+def link_lunar_crush_impl(
     wallet: typing.Optional[str] = None,
     hotkey: typing.Optional[str] = None,
     env: typing.Optional[str] = None,
@@ -27,7 +27,7 @@ def link_chutes_impl(
     console.print()
     console.print(
         Panel.fit(
-            "[bold cyan]🔗 Link Chutes API Key[/bold cyan]",
+            "[bold cyan]Link LunarCrush API Key[/bold cyan]",
             border_style="cyan",
             padding=(1, 2),
         )
@@ -54,39 +54,43 @@ def link_chutes_impl(
         console.print()
         console.print(
             Panel.fit(
-                f"[red]✗ Failed to load hotkey:[/red] {wallet}/{hotkey}",
+                f"[red]Failed to load hotkey:[/red] {wallet}/{hotkey}",
                 border_style="red",
             )
         )
         console.print()
         raise click.Abort()
 
-    console.print(f"[green]✓[/green] Loaded hotkey: [yellow]{hotkey_keypair.ss58_address}[/yellow]")
+    console.print(
+        f"[green]OK[/green] Loaded hotkey: [yellow]{hotkey_keypair.ss58_address}[/yellow]"
+    )
 
     console.print()
     console.print(
         Panel.fit(
-            "[bold cyan]Chutes API Key Setup[/bold cyan]\n\n"
-            "[dim]Get your API key from:[/dim] [cyan]https://chutes.ai/app[/cyan]\n\n"
-            "[yellow]Budget Tiers:[/yellow]\n"
-            "  • Free (backend key): [dim]$0.01 per agent run[/dim]\n"
-            "  • Paid (your key): [green]$0.10 per agent run[/green]\n\n"
+            "[bold cyan]LunarCrush API Key Setup[/bold cyan]\n\n"
+            "[dim]Get your API key from:[/dim] [cyan]https://lunarcrush.com[/cyan]\n\n"
+            "[yellow]Budget:[/yellow]\n"
+            "  - Miner-paid only (subscription-based, no per-call cost)\n"
+            "  - Rate limits: 500 req/min, 100K req/day\n\n"
             "[dim]Your API key will be securely stored in AWS Secrets Manager.[/dim]",
             border_style="cyan",
         )
     )
     console.print()
 
-    api_key = getpass("Enter your Chutes API key: ")
+    api_key = getpass("Enter your LunarCrush API key: ")
     if not api_key or not api_key.strip():
-        console.print("[red]✗[/red] API key cannot be empty")
+        console.print("[red]API key cannot be empty[/red]")
         raise click.Abort()
+
+    api_key = api_key.strip()
 
     console.print()
     console.print("[bold cyan]Ready to link:[/bold cyan]")
     console.print(f"  [dim]Hotkey:[/dim] {hotkey_keypair.ss58_address[:16]}...")
-    console.print("  [dim]Service:[/dim] Chutes")
-    console.print("  [dim]Budget:[/dim] $0.10 per run")
+    console.print("  [dim]Service:[/dim] LunarCrush")
+    console.print("  [dim]Budget:[/dim] Miner-paid (subscription)")
     console.print(f"  [dim]Network:[/dim] {env.upper()}")
     console.print(f"  [dim]Track:[/dim] {track}")
     console.print()
@@ -97,18 +101,18 @@ def link_chutes_impl(
 
     console.print()
     with console.status("[cyan]Storing credentials in backend...[/cyan]"):
-        success, error_msg = _store_chutes_credentials(env, hotkey_keypair, api_key, track)
+        success, error_msg = _store_lunar_crush_credentials(env, hotkey_keypair, api_key, track)
 
     if not success:
         console.print()
         console.print(
             Panel.fit(
-                f"[red]✗ Failed to link Chutes API key[/red]\n\n"
+                f"[red]Failed to link LunarCrush API key[/red]\n\n"
                 f"[yellow]Error:[/yellow] {error_msg}\n\n"
                 "[dim]Please check:[/dim]\n"
-                "  • API key is valid\n"
-                "  • Wallet has been registered as miner\n"
-                "  • Network connection is stable",
+                "  - API key is valid\n"
+                "  - Wallet has been registered as miner\n"
+                "  - Network connection is stable",
                 border_style="red",
             )
         )
@@ -118,11 +122,11 @@ def link_chutes_impl(
     console.print()
     console.print(
         Panel.fit(
-            "[bold green]✓ Successfully linked Chutes API key![/bold green]\n\n"
+            "[bold green]Successfully linked LunarCrush API key![/bold green]\n\n"
             f"[dim]Hotkey:[/dim] {hotkey_keypair.ss58_address[:16]}...\n"
-            f"[dim]Service:[/dim] Chutes\n"
-            f"[dim]Budget:[/dim] $0.10 per agent run\n\n"
-            "[yellow]Your agent runs will now use your Chutes API key[/yellow]",
+            f"[dim]Service:[/dim] LunarCrush\n"
+            f"[dim]Budget:[/dim] Miner-paid (subscription)\n\n"
+            "[yellow]Your agent runs will now use your LunarCrush API key[/yellow]",
             border_style="green",
             padding=(1, 2),
         )
@@ -130,7 +134,7 @@ def link_chutes_impl(
     console.print()
 
 
-def _store_chutes_credentials(
+def _store_lunar_crush_credentials(
     env: str, keypair, api_key: str, track: str
 ) -> typing.Tuple[bool, typing.Optional[str]]:
     api_url = ENV_URLS[env]
@@ -145,7 +149,7 @@ def _store_chutes_credentials(
             response = client.post(
                 f"{api_url}/api/v3/miner/services/link",
                 json={
-                    "service_name": "chutes",
+                    "service_name": "lunar_crush",
                     "auth_type": "api_key",
                     "track": track,
                     "credential_data": {

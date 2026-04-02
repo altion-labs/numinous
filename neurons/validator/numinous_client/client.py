@@ -9,6 +9,14 @@ from pydantic import ValidationError
 
 from neurons.validator.models.chutes import ChutesCompletion
 from neurons.validator.models.desearch import AISearchResponse
+from neurons.validator.models.lunar_crush import (
+    LunarCrushCoinsListResponse,
+    LunarCrushNewsResponse,
+    LunarCrushPostsResponse,
+    LunarCrushTimeSeriesResponse,
+    LunarCrushTopicResponse,
+    LunarCrushWhatsupResponse,
+)
 from neurons.validator.models.numinous_client import (
     BatchUpdateAgentRunsRequest,
     ChutesInferenceRequest,
@@ -20,6 +28,12 @@ from neurons.validator.models.numinous_client import (
     GetEventsResolvedResponse,
     GetEventsResponse,
     GetWeightsResponse,
+    LunarCrushCoinsListRequest,
+    LunarCrushNewsRequest,
+    LunarCrushPostsRequest,
+    LunarCrushTimeSeriesRequest,
+    LunarCrushTopicRequest,
+    LunarCrushWhatsupRequest,
     OpenRouterInferenceRequest,
     PostAgentLogsRequestBody,
     PostAgentRunsRequestBody,
@@ -408,6 +422,71 @@ class NuminousClient:
 
                 data = await response.json()
                 return OpenRouterCompletion.model_validate(data)
+
+    async def _lunar_crush_call(self, path: str, body_model, response_model, body: dict):
+        try:
+            validated = body_model.model_validate(body)
+        except ValidationError as e:
+            raise ValueError(f"Invalid parameters: {e}")
+
+        data = validated.model_dump_json()
+        auth_headers = self.make_auth_headers(data=data)
+
+        async with self.create_session(
+            other_headers={**auth_headers, "Content-Type": "application/json"}
+        ) as session:
+            async with session.post(path, data=data) as response:
+                response.raise_for_status()
+                resp_data = await response.json()
+                return response_model.model_validate(resp_data)
+
+    async def lunar_crush_get_topic(self, body: dict) -> LunarCrushTopicResponse:
+        return await self._lunar_crush_call(
+            "/api/gateway/lunar-crush/topic",
+            LunarCrushTopicRequest,
+            LunarCrushTopicResponse,
+            body,
+        )
+
+    async def lunar_crush_get_time_series(self, body: dict) -> LunarCrushTimeSeriesResponse:
+        return await self._lunar_crush_call(
+            "/api/gateway/lunar-crush/time-series",
+            LunarCrushTimeSeriesRequest,
+            LunarCrushTimeSeriesResponse,
+            body,
+        )
+
+    async def lunar_crush_get_news(self, body: dict) -> LunarCrushNewsResponse:
+        return await self._lunar_crush_call(
+            "/api/gateway/lunar-crush/news",
+            LunarCrushNewsRequest,
+            LunarCrushNewsResponse,
+            body,
+        )
+
+    async def lunar_crush_get_whatsup(self, body: dict) -> LunarCrushWhatsupResponse:
+        return await self._lunar_crush_call(
+            "/api/gateway/lunar-crush/whatsup",
+            LunarCrushWhatsupRequest,
+            LunarCrushWhatsupResponse,
+            body,
+        )
+
+    async def lunar_crush_get_posts(self, body: dict) -> LunarCrushPostsResponse:
+        return await self._lunar_crush_call(
+            "/api/gateway/lunar-crush/posts",
+            LunarCrushPostsRequest,
+            LunarCrushPostsResponse,
+            body,
+        )
+
+    async def lunar_crush_get_coins_list(self, body: dict) -> LunarCrushCoinsListResponse:
+        return await self._lunar_crush_call(
+            "/api/gateway/lunar-crush/coins-list",
+            LunarCrushCoinsListRequest,
+            LunarCrushCoinsListResponse,
+            body,
+        )
 
     async def get_weights(self):
         auth_headers = self.make_get_auth_headers()

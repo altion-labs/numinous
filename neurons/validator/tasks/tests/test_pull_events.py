@@ -68,6 +68,7 @@ class TestPullEventsTask:
                 "cutoff": 1699996800,
                 "event_metadata": {"topics": [], "trigger_name": None},
                 "run_days_before_cutoff": 2,
+                "tracks": ["MAIN"],
             }
         )
 
@@ -117,6 +118,7 @@ class TestPullEventsTask:
                 "cutoff": 1699996800,
                 "event_metadata": None,
                 "run_days_before_cutoff": 2,
+                "tracks": ["MAIN"],
             }
         )
 
@@ -200,6 +202,7 @@ class TestPullEventsTask:
                     "end_date": 1733620000,
                     "event_metadata": {},
                     "run_days_before_cutoff": 2,
+                    "tracks": ["MAIN"],
                 },
             ],
             "has_more": True,
@@ -221,6 +224,7 @@ class TestPullEventsTask:
                     "end_date": 1733621000,
                     "event_metadata": {},
                     "run_days_before_cutoff": 2,
+                    "tracks": ["MAIN"],
                 },
             ],
             "has_more": True,
@@ -286,6 +290,7 @@ class TestPullEventsTask:
                     "end_date": 1733620000,
                     "event_metadata": {},
                     "run_days_before_cutoff": 2,
+                    "tracks": ["MAIN"],
                 },
             ],
             "has_more": True,
@@ -313,6 +318,7 @@ class TestPullEventsTask:
                     "end_date": 1733621000,
                     "event_metadata": {},
                     "run_days_before_cutoff": 2,
+                    "tracks": ["MAIN"],
                 },
             ],
             "has_more": True,

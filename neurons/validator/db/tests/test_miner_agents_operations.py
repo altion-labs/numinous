@@ -36,6 +36,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id=str(uuid4()),
                 miner_uid=1,
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 agent_name="Agent1",
                 version_number=1,
                 file_path="/data/agents/1/agent.py",
@@ -46,6 +47,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id=str(uuid4()),
                 miner_uid=2,
                 miner_hotkey="hotkey2",
+                track="MAIN",
                 agent_name="Agent2",
                 version_number=1,
                 file_path="/data/agents/2/agent.py",
@@ -56,6 +58,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id=str(uuid4()),
                 miner_uid=3,
                 miner_hotkey="hotkey3",
+                track="MAIN",
                 agent_name="Agent3",
                 version_number=1,
                 file_path="/data/agents/3/agent.py",
@@ -84,6 +87,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id=version_id_1,
                 miner_uid=42,
                 miner_hotkey="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+                track="MAIN",
                 agent_name="TestAgent1",
                 version_number=1,
                 file_path="/data/agents/42/test1.py",
@@ -94,6 +98,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id=version_id_2,
                 miner_uid=43,
                 miner_hotkey="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+                track="MAIN",
                 agent_name="TestAgent2",
                 version_number=1,
                 file_path="/data/agents/43/test2.py",
@@ -141,6 +146,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
             version_id=version_id,
             miner_uid=42,
             miner_hotkey="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            track="MAIN",
             agent_name="TestAgent",
             version_number=1,
             file_path="/data/agents/42/old_path.py",
@@ -168,6 +174,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
             version_id=version_id,
             miner_uid=42,
             miner_hotkey="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            track="MAIN",
             agent_name="TestAgent",
             version_number=1,
             file_path="/data/agents/42/new_path.py",
@@ -202,6 +209,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
             version_id=version_id,
             miner_uid=42,
             miner_hotkey="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            track="MAIN",
             agent_name="TestAgent",
             version_number=1,
             file_path="/data/agents/42/test.py",
@@ -236,6 +244,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id="c-agent",
                 miner_uid=1,
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 agent_name="Agent1",
                 version_number=1,
                 file_path="/data/agents/1/agent.py",
@@ -246,6 +255,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id="a-agent",
                 miner_uid=2,
                 miner_hotkey="hotkey2",
+                track="MAIN",
                 agent_name="Agent2",
                 version_number=1,
                 file_path="/data/agents/2/agent.py",
@@ -256,6 +266,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id="b-agent",
                 miner_uid=3,
                 miner_hotkey="hotkey3",
+                track="MAIN",
                 agent_name="Agent3",
                 version_number=1,
                 file_path="/data/agents/3/agent.py",
@@ -280,6 +291,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id=f"{i:02d}-agent",
                 miner_uid=i,
                 miner_hotkey=f"hotkey{i}",
+                track="MAIN",
                 agent_name=f"Agent{i}",
                 version_number=1,
                 file_path=f"/data/agents/{i}/agent.py",
@@ -311,6 +323,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id="1-miner1-v1",
                 miner_uid=1,
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 agent_name="Agent1",
                 version_number=1,
                 file_path="/data/agents/1/v1/agent.py",
@@ -321,6 +334,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id="1-miner1-v3",
                 miner_uid=1,
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 agent_name="Agent1",
                 version_number=3,
                 file_path="/data/agents/1/v3/agent.py",
@@ -331,6 +345,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id="1-miner1-v2",
                 miner_uid=1,
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 agent_name="Agent1",
                 version_number=2,
                 file_path="/data/agents/1/v2/agent.py",
@@ -341,6 +356,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id="2-miner2-v1",
                 miner_uid=2,
                 miner_hotkey="hotkey2",
+                track="MAIN",
                 agent_name="Agent2",
                 version_number=1,
                 file_path="/data/agents/2/v1/agent.py",
@@ -351,6 +367,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id="2-miner2-v2",
                 miner_uid=2,
                 miner_hotkey="hotkey2",
+                track="MAIN",
                 agent_name="Agent2",
                 version_number=2,
                 file_path="/data/agents/2/v2/agent.py",
@@ -361,6 +378,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id="3-miner3-v1",
                 miner_uid=3,
                 miner_hotkey="hotkey3",
+                track="MAIN",
                 agent_name="Agent3",
                 version_number=1,
                 file_path="/data/agents/3/v1/agent.py",
@@ -394,6 +412,102 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
         assert result[1].version_id == "2-miner2-v2"
         assert result[2].version_id == "3-miner3-v1"
 
+    async def test_get_active_agents_returns_one_per_track_per_miner(
+        self, db_operations: DatabaseOperations
+    ):
+        now = datetime(2024, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+
+        agents = [
+            MinerAgentsModel(
+                version_id="miner1-main-v1",
+                miner_uid=1,
+                miner_hotkey="hotkey1",
+                track="MAIN",
+                agent_name="MainAgent",
+                version_number=1,
+                file_path="/data/agents/1/main/v1.py",
+                pulled_at=now,
+                created_at=now,
+            ),
+            MinerAgentsModel(
+                version_id="miner1-main-v2",
+                miner_uid=1,
+                miner_hotkey="hotkey1",
+                track="MAIN",
+                agent_name="MainAgent",
+                version_number=2,
+                file_path="/data/agents/1/main/v2.py",
+                pulled_at=now,
+                created_at=now,
+            ),
+            MinerAgentsModel(
+                version_id="miner1-signal-v1",
+                miner_uid=1,
+                miner_hotkey="hotkey1",
+                track="SIGNAL",
+                agent_name="SignalAgent",
+                version_number=1,
+                file_path="/data/agents/1/signal/v1.py",
+                pulled_at=now,
+                created_at=now,
+            ),
+        ]
+
+        await db_operations.upsert_miner_agents(agents)
+
+        result = await db_operations.get_active_agents()
+
+        # Same miner, two tracks = two active agents
+        assert len(result) == 2
+
+        main_agent = next((a for a in result if a.track == "MAIN"), None)
+        signal_agent = next((a for a in result if a.track == "SIGNAL"), None)
+
+        assert main_agent is not None
+        assert main_agent.version_number == 2
+        assert main_agent.file_path == "/data/agents/1/main/v2.py"
+
+        assert signal_agent is not None
+        assert signal_agent.version_number == 1
+        assert signal_agent.file_path == "/data/agents/1/signal/v1.py"
+
+    async def test_upsert_miner_agents_same_version_number_different_tracks(
+        self, db_operations: DatabaseOperations
+    ):
+        now = datetime(2024, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+
+        agents = [
+            MinerAgentsModel(
+                version_id="miner1-main",
+                miner_uid=1,
+                miner_hotkey="hotkey1",
+                track="MAIN",
+                agent_name="MainAgent",
+                version_number=1,
+                file_path="/data/agents/1/main.py",
+                pulled_at=now,
+                created_at=now,
+            ),
+            MinerAgentsModel(
+                version_id="miner1-signal",
+                miner_uid=1,
+                miner_hotkey="hotkey1",
+                track="SIGNAL",
+                agent_name="SignalAgent",
+                version_number=1,
+                file_path="/data/agents/1/signal.py",
+                pulled_at=now,
+                created_at=now,
+            ),
+        ]
+
+        await db_operations.upsert_miner_agents(agents)
+
+        result = await db_operations.get_active_agents()
+
+        # Same miner, same version_number, different tracks = both stored
+        assert len(result) == 2
+
     async def test_upsert_miner_agents_unique_constraint(
         self, db_operations: DatabaseOperations, db_client: DatabaseClient
     ):
@@ -405,6 +519,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id=version_id_1,
                 miner_uid=42,
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 agent_name="Agent1",
                 version_number=1,
                 file_path="/data/agents/42/v1.py",
@@ -415,6 +530,7 @@ class TestMinerAgentsOperations(TestDbOperationsBase):
                 version_id=version_id_2,
                 miner_uid=42,
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 agent_name="Agent1",
                 version_number=2,
                 file_path="/data/agents/42/v2.py",

@@ -20,6 +20,18 @@ For system architecture, see [architecture.md](./architecture.md).
 
 ---
 
+# Tracks
+
+Miners can participate in multiple **tracks**. Each track is a separate competition with its own agents, predictions, scores, and weight pools. A miner's identity is `(miner_uid, hotkey, track)` — meaning the same miner can have one active agent per track, each scored independently.
+
+- **Independent scoring:** Your agent on one track has no effect on your score in another. Each track has its own scoring pools and weight allocation.
+- **Sandbox rules per track:** Each track defines which gateway endpoints are accessible. See [`track_config.py`](../neurons/validator/sandbox/signing_proxy/track_config.py) for the per-track endpoint allowlist.
+- **Credential fallback:** Service credentials linked for the MAIN track are used as fallback for all other tracks.
+
+Available tracks are defined in [`neurons/validator/models/track.py`](../neurons/validator/models/track.py).
+
+---
+
 # Execution Rules
 
 ## Code Activation Schedule
@@ -178,15 +190,14 @@ clipped_prediction = max(0.01, min(0.99, prediction))
 
 All external API calls routed through validator's signing proxy.
 
-**Available Endpoints:**
-- `/api/gateway/chutes` - Chutes AI (open-source LLM API)
-- `/api/gateway/desearch` - Desearch AI (Web/Twitter search)
+**Available Endpoints:** See [gateway-guide.md](./gateway-guide.md) for the full list of services and endpoints.
+
+**Track-Based Access:** The endpoints your agent can access depend on its track. The MAIN track has full access to all endpoints. Other tracks may be restricted to a subset — see [`track_config.py`](../neurons/validator/sandbox/signing_proxy/track_config.py) for the per-track allowlist.
 
 **Authentication & Costs:**
 - Authentication handled automatically by signing proxy
 - **Link your API accounts to access higher budgets** (see [miner-setup.md](./miner-setup.md#linking-services))
-  - `numi services link chutes` - Link Chutes API key
-  - `numi services link desearch` - Link Desearch API key
+- Credentials linked for MAIN are used as fallback for all tracks
 - Re-link after each agent upload
 
 ## Chutes AI - Open Source LLMs

@@ -4,6 +4,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, field_validator
 
+from neurons.validator.models.track import TrackEnum
+
 
 class ScoresExportedStatus(IntEnum):
     NOT_EXPORTED = 0
@@ -14,6 +16,7 @@ class ScoresModel(BaseModel):
     event_id: str
     miner_uid: int
     miner_hotkey: str
+    track: TrackEnum
     prediction: float
     event_score: float
     created_at: Optional[datetime] = None
@@ -26,6 +29,7 @@ class ScoresModel(BaseModel):
             "event_id",
             "miner_uid",
             "miner_hotkey",
+            "track",
         ]
 
     @field_validator("exported", mode="before")

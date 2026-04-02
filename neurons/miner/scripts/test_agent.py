@@ -15,6 +15,8 @@ from neurons.miner.scripts.test_agent_lib import (  # noqa: E402
     preflight,
     selection,
 )
+from neurons.miner.scripts.track_utils import prompt_track_selection  # noqa: E402
+from neurons.validator.models.track import TrackEnum  # noqa: E402
 
 console = Console()
 
@@ -26,7 +28,13 @@ console = Console()
     type=str,
     help="Agent file path (interactive prompt if not provided)",
 )
-def test(agent_file: typing.Optional[str] = None) -> None:
+@click.option(
+    "--track",
+    "-t",
+    type=str,
+    help="Track to test with (controls endpoint filtering). Interactive prompt if not provided.",
+)
+def test(agent_file: typing.Optional[str] = None, track: typing.Optional[str] = None) -> None:
     """Test your forecasting agent locally with real events
 
     \b
@@ -37,6 +45,9 @@ def test(agent_file: typing.Optional[str] = None) -> None:
       # Test specific agent
       numi test-agent --agent-file my_agent.py
       numi test-agent -f baseline_agent.py
+
+      # Test with SIGNAL track (restricted endpoints)
+      numi test-agent -f my_signal_agent.py -t SIGNAL
 
     \b
     💡 Tip: Use 'numi gateway' for gateway management
@@ -76,7 +87,13 @@ def test(agent_file: typing.Optional[str] = None) -> None:
     console.print(f"[green]✓[/green] Selected [cyan]{len(events)}[/cyan] event(s)")
     console.print()
 
-    results = execution.run_tests(agent_path, events)
+    if not track:
+        track = prompt_track_selection()
+    else:
+        track = track.upper()
+
+    track_enum = TrackEnum(track)
+    results = execution.run_tests(agent_path, events, track=track_enum)
     display.show_results(results)
 
 

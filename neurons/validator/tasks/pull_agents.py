@@ -150,6 +150,7 @@ class PullAgents(AbstractTask):
             version_id=str(agent_data.version_id),
             miner_uid=agent_data.miner_uid,
             miner_hotkey=agent_data.miner_hotkey,
+            track=agent_data.track,
             agent_name=agent_data.agent_name,
             version_number=agent_data.version_number,
             file_path=str(file_path),

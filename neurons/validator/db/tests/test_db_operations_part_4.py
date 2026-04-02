@@ -45,6 +45,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             version_id=version_id,
             miner_uid=miner_uid,
             miner_hotkey="5GTest...",
+            track="MAIN",
             agent_name="TestAgent",
             version_number=1,
             file_path=f"/data/agents/{miner_uid}/test.py",
@@ -67,6 +68,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="5GTest...",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
 
@@ -100,6 +102,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="5GTest...",
+            track="MAIN",
             status=AgentRunStatus.SANDBOX_TIMEOUT,
             is_final=False,
         )
@@ -113,6 +116,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="5GTest...",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             is_final=True,
         )
@@ -158,6 +162,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=True,
         )
@@ -170,6 +175,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v2",
             miner_uid=2,
             miner_hotkey="hotkey_2",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=False,
         )
@@ -181,6 +187,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v3",
             miner_uid=3,
             miner_hotkey="hotkey_3",
+            track="MAIN",
             status=AgentRunStatus.INTERNAL_AGENT_ERROR,
             exported=False,
         )
@@ -210,6 +217,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
                 agent_version_id=f"agent_v{i}",
                 miner_uid=i,
                 miner_hotkey=f"hotkey_{i}",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
                 exported=False,
             )
@@ -240,6 +248,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=False,
         )
@@ -251,6 +260,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v2",
             miner_uid=2,
             miner_hotkey="hotkey_2",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=False,
         )
@@ -291,6 +301,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             is_final=True,
         )
@@ -303,6 +314,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v2",
             miner_uid=2,
             miner_hotkey="hotkey_2",
+            track="MAIN",
             status=AgentRunStatus.SANDBOX_TIMEOUT,
             is_final=False,
         )
@@ -315,6 +327,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v3",
             miner_uid=3,
             miner_hotkey="hotkey_3",
+            track="MAIN",
             status=AgentRunStatus.INTERNAL_AGENT_ERROR,
             is_final=True,
         )
@@ -347,6 +360,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id=agent_version_id,
             miner_uid=miner_uid,
             miner_hotkey="hotkey_42",
+            track="MAIN",
             status=AgentRunStatus.SANDBOX_TIMEOUT,
             is_final=False,
         )
@@ -359,6 +373,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id=agent_version_id,
             miner_uid=miner_uid,
             miner_hotkey="hotkey_42",
+            track="MAIN",
             status=AgentRunStatus.SANDBOX_TIMEOUT,
             is_final=False,
         )
@@ -371,6 +386,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id=agent_version_id,
             miner_uid=miner_uid,
             miner_hotkey="hotkey_42",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             is_final=True,
         )
@@ -411,6 +427,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="5GTest...",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -445,6 +462,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="5GTest...",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -482,6 +500,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="5GTest...",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -516,6 +535,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="5GTest...",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -548,6 +568,7 @@ class TestDbOperationsPart4(TestDbOperationsBase):
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="5GTest...",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -607,6 +628,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run_1])
@@ -617,6 +639,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v2",
             miner_uid=2,
             miner_hotkey="hotkey_2",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run_2])
@@ -627,6 +650,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v3",
             miner_uid=3,
             miner_hotkey="hotkey_3",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run_3])
@@ -672,6 +696,7 @@ Line 4: Newlines and tabs\t\n"""
                 agent_version_id=f"agent_v{i+1}",
                 miner_uid=i + 1,
                 miner_hotkey=f"hotkey_{i+1}",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
             )
             await db_operations.upsert_agent_runs([run])
@@ -704,6 +729,7 @@ Line 4: Newlines and tabs\t\n"""
                 agent_version_id=f"agent_v{i}",
                 miner_uid=i,
                 miner_hotkey=f"hotkey_{i}",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
             )
             await db_operations.upsert_agent_runs([run])
@@ -733,6 +759,7 @@ Line 4: Newlines and tabs\t\n"""
                 agent_version_id=f"agent_v{i}",
                 miner_uid=i,
                 miner_hotkey=f"hotkey_{i}",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
             )
             await db_operations.upsert_agent_runs([run])
@@ -769,6 +796,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -809,6 +837,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run_1])
@@ -819,6 +848,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v2",
             miner_uid=2,
             miner_hotkey="hotkey_2",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run_2])
@@ -862,6 +892,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -896,6 +927,7 @@ Line 4: Newlines and tabs\t\n"""
                 agent_version_id="agent_v1",
                 miner_uid=1,
                 miner_hotkey="hotkey_1",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
             )
             await db_operations.upsert_agent_runs([run])
@@ -933,6 +965,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -989,6 +1022,7 @@ Line 4: Newlines and tabs\t\n"""
                 agent_version_id="agent_v1",
                 miner_uid=1,
                 miner_hotkey="hotkey_1",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
             )
             await db_operations.upsert_agent_runs([run])
@@ -1027,6 +1061,7 @@ Line 4: Newlines and tabs\t\n"""
                 agent_version_id="agent_v1",
                 miner_uid=1,
                 miner_hotkey="hotkey_1",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
             )
             await db_operations.upsert_agent_runs([run])
@@ -1061,6 +1096,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -1093,6 +1129,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -1121,6 +1158,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         await db_operations.upsert_agent_runs([run])
@@ -1155,6 +1193,7 @@ Line 4: Newlines and tabs\t\n"""
                 agent_version_id="agent_v1",
                 miner_uid=1,
                 miner_hotkey="hotkey_1",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
                 exported=True,
             )
@@ -1189,6 +1228,7 @@ Line 4: Newlines and tabs\t\n"""
                 agent_version_id="agent_v1",
                 miner_uid=1,
                 miner_hotkey="hotkey_1",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
                 exported=True,
             )
@@ -1221,6 +1261,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=False,
         )
@@ -1253,6 +1294,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=True,
         )
@@ -1283,6 +1325,7 @@ Line 4: Newlines and tabs\t\n"""
                 agent_version_id="agent_v1",
                 miner_uid=1,
                 miner_hotkey="hotkey_1",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
                 exported=True,
             )
@@ -1318,6 +1361,7 @@ Line 4: Newlines and tabs\t\n"""
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=True,
         )

@@ -65,6 +65,7 @@ class ExportScores(AbstractTask):
                 answer=float(event.outcome),
                 miner_hotkey=db_score.miner_hotkey,
                 miner_uid=db_score.miner_uid,
+                track=db_score.track,
                 miner_score=db_score.event_score,
                 validator_hotkey=self.validator_hotkey,
                 validator_uid=self.validator_uid,

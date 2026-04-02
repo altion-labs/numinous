@@ -4,6 +4,8 @@
 
 The Gateway API provides miner agents with access to external services during sandbox execution. Agents run in isolated Docker containers without internet access, and the gateway acts as a controlled proxy to external APIs. Validators handle authentication, while miners can link their API accounts to cover costs and access higher budgets (see [miner-setup.md](./miner-setup.md#linking-services)).
 
+**Track-based access:** Not all tracks have access to all endpoints. The MAIN track has full access. Other tracks are restricted to a curated subset of services — see [`track_config.py`](../neurons/validator/sandbox/signing_proxy/track_config.py) for the per-track endpoint allowlist. Requests to disallowed endpoints return 403.
+
 **Available Services:**
 - **Chutes AI**: LLM inference with multiple open-source models
 - **Desearch AI**: Web search, social media search, and content crawling
@@ -11,11 +13,13 @@ The Gateway API provides miner agents with access to external services during sa
 - **Perplexity**: Reasoning LLMs with built-in web search
 - **Vericore**: Statement verification with evidence-based metrics
 - **OpenRouter**: Model router with access to hundreds of LLM models (Claude, Gemini, Llama, etc.)
+- **LunarCrush**: Social media intelligence and sentiment data for any topic
 - **Numinous Indicia**: Geopolitical and OSINT signals intelligence (X/Twitter, LiveUAMap)
+- **Numinous Signals**: Event-relevant news signals scored by relevance and impact
 
 All requests are cached to optimize performance and reduce costs.
 
-**Cost Limits:** $0.01 (default) or $0.10 (linked account) per sandbox run for Chutes and Desearch. OpenAI: $1.00 per run (requires linked account, no free tier). Perplexity: $0.10 per run (requires linked account, no free tier). Vericore: $0.10 per run (requires linked account, no free tier). OpenRouter: $0.10 per run (requires linked account, no free tier). Numinous Indicia: free (no linking required).
+**Cost Limits:** $0.01 (default) or $0.10 (linked account) per sandbox run for Chutes and Desearch. OpenAI: $1.00 per run (requires linked account, no free tier). Perplexity: $0.10 per run (requires linked account, no free tier). Vericore: $0.10 per run (requires linked account, no free tier). OpenRouter: $0.10 per run (requires linked account, no free tier). LunarCrush: $0.10 per run (requires linked account, no free tier). Numinous Indicia: free (no linking required). Numinous Signals: free (no linking required).
 
 **Security:** API keys are securely stored using external secret management and never exposed to validators.
 
@@ -1304,6 +1308,246 @@ cost = result.get("cost", 0.0)
 
 ---
 
+## LunarCrush Endpoints
+
+LunarCrush provides social media intelligence and sentiment data for any topic -- crypto, geopolitics, stocks, and more. Useful for gauging public sentiment and social trends around events.
+
+### POST /api/gateway/lunar-crush/whatsup
+
+AI-generated sentiment summary with bullish/bearish themes and percentages.
+
+**URL:** `{SANDBOX_PROXY_URL}/api/gateway/lunar-crush/whatsup`
+
+**Request Body:**
+```json
+{
+  "run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "topic": "bitcoin"
+}
+```
+
+**Parameters:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `run_id` | string (UUID) | Yes | - | Execution tracking ID from environment |
+| `topic` | string | Yes | - | Topic to search (lowercase, e.g., "bitcoin", "iran", "oil prices") |
+
+**Response:**
+```json
+{
+  "config": {"id": "bitcoin", "name": "Bitcoin", "symbol": "BTC"},
+  "summary": "Bitcoin surges past $75K as institutional buying drives demand.",
+  "supportive": [
+    {"title": "Institutional Adoption", "description": "Major companies increasing holdings", "percent": 25.0}
+  ],
+  "critical": [
+    {"title": "Regulatory Concerns", "description": "Ongoing debates about regulation", "percent": 5.0}
+  ],
+  "cost": 0.001
+}
+```
+
+### POST /api/gateway/lunar-crush/topic
+
+Current social metrics, rank, and trend for a topic.
+
+**URL:** `{SANDBOX_PROXY_URL}/api/gateway/lunar-crush/topic`
+
+**Request Body:**
+```json
+{
+  "run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "topic": "bitcoin"
+}
+```
+
+**Response:**
+```json
+{
+  "config": {"id": "bitcoin"},
+  "data": {
+    "topic": "bitcoin",
+    "title": "Bitcoin",
+    "topic_rank": 83,
+    "interactions_24h": 367838294,
+    "num_contributors": 71451,
+    "num_posts": 292738,
+    "trend": "flat",
+    "categories": ["Cryptocurrencies"]
+  },
+  "cost": 0.001
+}
+```
+
+### POST /api/gateway/lunar-crush/news
+
+Top news articles with sentiment scores for a topic.
+
+**URL:** `{SANDBOX_PROXY_URL}/api/gateway/lunar-crush/news`
+
+**Request Body:**
+```json
+{
+  "run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "topic": "bitcoin"
+}
+```
+
+**Response (truncated):**
+```json
+{
+  "config": {"id": "bitcoin"},
+  "data": [
+    {
+      "id": "news-123",
+      "post_type": "news",
+      "post_title": "Crypto ETFs Rally Continues With $202 Million Inflow",
+      "post_sentiment": 3.22,
+      "creator_name": "BitcoinNews",
+      "creator_followers": 3273394,
+      "interactions_24h": 2790
+    }
+  ],
+  "cost": 0.001
+}
+```
+
+### POST /api/gateway/lunar-crush/time-series
+
+Historical daily or hourly social + price data.
+
+**URL:** `{SANDBOX_PROXY_URL}/api/gateway/lunar-crush/time-series`
+
+**Request Body:**
+```json
+{
+  "run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "topic": "bitcoin",
+  "bucket": "day"
+}
+```
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `topic` | string | Yes | - | Topic to search |
+| `bucket` | string | No | "day" | Aggregation: "day" or "hour" |
+
+**Response (truncated):**
+```json
+{
+  "config": {"bucket": "day", "topic": "bitcoin"},
+  "data": [
+    {
+      "time": 1773662400,
+      "close": 75000.0,
+      "sentiment": 80,
+      "galaxy_score": 65.0,
+      "interactions": 500000,
+      "volume_24h": 53800000000
+    }
+  ],
+  "cost": 0.001
+}
+```
+
+### POST /api/gateway/lunar-crush/posts
+
+Top social media posts across platforms (Twitter, YouTube, TikTok, Reddit, Instagram).
+
+**URL:** `{SANDBOX_PROXY_URL}/api/gateway/lunar-crush/posts`
+
+**Request Body:**
+```json
+{
+  "run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "topic": "bitcoin",
+  "start": null,
+  "end": null
+}
+```
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `topic` | string | Yes | - | Topic to search |
+| `start` | integer | No | null | Unix timestamp filter start |
+| `end` | integer | No | null | Unix timestamp filter end |
+
+### POST /api/gateway/lunar-crush/coins-list
+
+Market + social data for all 6600+ tracked cryptocurrencies.
+
+**URL:** `{SANDBOX_PROXY_URL}/api/gateway/lunar-crush/coins-list`
+
+**Request Body:**
+```json
+{
+  "run_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Response (truncated):**
+```json
+{
+  "config": {"sort": "market_cap_rank", "total_rows": 6668},
+  "data": [
+    {
+      "id": 1,
+      "symbol": "BTC",
+      "name": "Bitcoin",
+      "price": 74400.08,
+      "market_cap_rank": 1,
+      "sentiment": 81,
+      "galaxy_score": 61.8,
+      "social_volume_24h": 292342,
+      "percent_change_24h": 0.49
+    }
+  ],
+  "cost": 0.001
+}
+```
+
+**Example (using httpx):**
+```python
+import os
+import httpx
+
+PROXY_URL = os.getenv("SANDBOX_PROXY_URL")
+RUN_ID = os.getenv("RUN_ID")
+
+# Get AI sentiment summary
+whatsup = httpx.post(
+    f"{PROXY_URL}/api/gateway/lunar-crush/whatsup",
+    json={"run_id": RUN_ID, "topic": "bitcoin"},
+    timeout=30.0,
+).json()
+
+summary = whatsup["summary"]
+bullish_pct = sum(t["percent"] for t in whatsup["supportive"])
+bearish_pct = sum(t["percent"] for t in whatsup["critical"])
+
+# Get current social stats
+topic = httpx.post(
+    f"{PROXY_URL}/api/gateway/lunar-crush/topic",
+    json={"run_id": RUN_ID, "topic": "bitcoin"},
+    timeout=30.0,
+).json()
+
+trend = topic["data"]["trend"]  # "up", "flat", or "down"
+```
+
+**Error Handling:**
+
+| Status Code | Description | Recommended Action |
+|-------------|-------------|-------------------|
+| 404 | Topic not found | Try a simpler/shorter topic keyword |
+| 429 | Budget limit exceeded | Link your API key |
+| 503 | Service unavailable | Retry with backoff |
+
+**Note:** LunarCrush has no free tier. You must link your API key to use LunarCrush. Subscription-based pricing, nominal $0.001 per call for budget tracking.
+
+---
+
 ## Numinous Indicia Endpoints
 
 Numinous Indicia provides geopolitical and OSINT signals intelligence from X/Twitter and LiveUAMap. Useful as additional context for geopolitical forecasting when combined with an LLM.
@@ -1424,6 +1668,138 @@ for s in signals:
 **Note:** Numinous Indicia is free to use. No API key linking required.
 
 See `neurons/miner/agents/indicia_openai_example.py` for a complete agent that combines Indicia signals with OpenAI web search for geopolitical forecasting.
+
+---
+
+## Numinous Signals Endpoints
+
+Numinous Signals scores recent news and events by relevance and impact to a given question or market, and returns ranked signals. Useful for getting structured context before making a prediction.
+
+### POST /api/gateway/numinous-signals/signals
+
+Compute scored signals for a question or Polymarket market.
+
+**URL:** `{SANDBOX_PROXY_URL}/api/gateway/numinous-signals/signals`
+
+**Request Body:**
+```json
+{
+  "run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "question": "Will Bitcoin exceed 100k by end of March 2026?",
+  "relevance_threshold": 0.25,
+  "max_events_per_source": 10,
+  "time_window_hours": 72
+}
+```
+
+**Parameters:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `run_id` | string (UUID) | Yes | - | Execution tracking ID from environment |
+| `market` | string | One of market/question | - | Polymarket URL, slug, or condition ID |
+| `question` | string | One of market/question | - | Free-text question to find signals for |
+| `relevance_threshold` | float | No | 0.25 | Minimum relevance score to include (0.0-1.0) |
+| `max_events_per_source` | integer | No | 25 | Cap per source before dedup (1-100) |
+| `time_window_hours` | integer | No | 72 | Lookback window in hours (1-720) |
+
+Provide exactly one of `market` or `question`, not both.
+
+**Response:**
+```json
+{
+  "signals": [
+    {
+      "headline": "Bitcoin Price Prediction March 2026",
+      "source": "perplexity",
+      "timestamp": "2026-03-27T19:50:27.802990Z",
+      "relevance_score": 1.0,
+      "impact_score": 0.5,
+      "direction": "neutral",
+      "rationale": "Directly addresses BTC price prediction for March 2026.",
+      "source_url": "https://example.com/btc-prediction"
+    }
+  ],
+  "source_weights": [
+    {
+      "source_name": "perplexity",
+      "event_count": 5,
+      "avg_relevance_score": 0.68,
+      "avg_impact_score": 0.36
+    }
+  ],
+  "total_event_count": 20,
+  "filtered_count": 16,
+  "failed_sources": ["exa"],
+  "question_context": "Will Bitcoin exceed 100k by end of March 2026?",
+  "processing_metadata": {
+    "duration_seconds": 24.084,
+    "llm_scored_count": 20,
+    "total_ingested_events": 20,
+    "question_text": "Will Bitcoin exceed 100k by end of March 2026?",
+    "market_yes_price": null
+  },
+  "cost": 0.001
+}
+```
+
+**Signal Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `signals` | array | Scored signals sorted by relevance |
+| `signals[].headline` | string | Signal headline |
+| `signals[].source` | string | Source that produced this signal |
+| `signals[].timestamp` | string (ISO 8601) | When the signal was captured |
+| `signals[].relevance_score` | float | How relevant to the question (0.0-1.0) |
+| `signals[].impact_score` | float | How much it moves the needle (0.0-1.0) |
+| `signals[].direction` | string | `supports_yes`, `supports_no`, or `neutral` |
+| `signals[].rationale` | string | One-sentence explanation of the score |
+| `signals[].source_url` | string | Original source URL (may be null) |
+| `source_weights` | array | Per-source aggregated stats |
+| `total_event_count` | integer | Events after dedup, before threshold filtering |
+| `filtered_count` | integer | Events removed by relevance threshold |
+| `failed_sources` | array | Sources that failed to respond |
+| `cost` | float | Cost for this request ($0.001) |
+
+**Example (using httpx):**
+```python
+import os
+import httpx
+
+PROXY_URL = os.getenv("SANDBOX_PROXY_URL")
+RUN_ID = os.getenv("RUN_ID")
+
+SIGNALS_URL = f"{PROXY_URL}/api/gateway/numinous-signals"
+
+response = httpx.post(
+    f"{SIGNALS_URL}/signals",
+    json={
+        "run_id": RUN_ID,
+        "question": "Will Bitcoin exceed 100k by end of March 2026?",
+        "max_events_per_source": 10,
+        "time_window_hours": 48,
+    },
+    timeout=120.0,
+)
+
+data = response.json()
+for s in data["signals"]:
+    print(f"[{s['direction']}] {s['headline']} (relevance={s['relevance_score']:.2f})")
+```
+
+**Error Handling:**
+
+| Status Code | Description | Recommended Action |
+|-------------|-------------|-------------------|
+| 422 | Validation error (e.g., both market and question provided) | Fix request parameters |
+| 429 | Budget limit exceeded | Reduce calls per run |
+| 503 | Service Unavailable | Retry with exponential backoff |
+| 500 | Internal server error | Retry with fallback |
+
+**Note:** Numinous Signals is free to use. No API key linking required. This endpoint can take up to 30 seconds to respond. Set your timeout accordingly (120s recommended).
+
+See `neurons/miner/agents/signals_openai_example.py` for a complete agent that combines Numinous Signals with OpenAI web search for forecasting.
 
 ---
 
@@ -1682,6 +2058,7 @@ Logs include:
 
 - **Chutes AI Models:** https://chutes.ai/app
 - **Desearch AI Documentation:** https://desearch.ai/
+- **LunarCrush API:** https://lunarcrush.com/developers/api/endpoints
 - **Miner Setup Guide:** [miner-setup.md](./miner-setup.md)
 - **Subnet Rules:** [subnet-rules.md](./subnet-rules.md)
 - **Architecture Overview:** [architecture.md](./architecture.md)

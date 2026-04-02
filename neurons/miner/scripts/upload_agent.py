@@ -12,6 +12,7 @@ from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
 from neurons.miner.scripts.numinous_config import ENV_URLS
+from neurons.miner.scripts.track_utils import prompt_track_selection
 from neurons.miner.scripts.wallet_utils import load_keypair, prompt_wallet_selection
 
 console = Console()
@@ -110,6 +111,12 @@ def find_agent_file(agent_file: str) -> typing.Optional[Path]:
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
     help="Custom wallet directory path (default: ~/.bittensor/wallets)",
 )
+@click.option(
+    "--track",
+    "-t",
+    type=str,
+    help="Track to upload agent for (e.g. MAIN, SIGNAL). Interactive prompt if not provided.",
+)
 def upload(
     agent_file: typing.Optional[str] = None,
     wallet: typing.Optional[str] = None,
@@ -117,6 +124,7 @@ def upload(
     name: typing.Optional[str] = None,
     env: typing.Optional[str] = None,
     wallet_path: typing.Optional[Path] = None,
+    track: typing.Optional[str] = None,
 ) -> None:
     """Upload your forecasting agent to Numinous
 
@@ -133,6 +141,9 @@ def upload(
 
       # Quick upload with all options
       numi upload-agent -f my_agent.py -e prod -w miner1 -k default -n "My Forecaster"
+
+      # Upload to SIGNAL track
+      numi upload-agent -f my_agent.py -t SIGNAL
 
       # Use custom wallet directory
       numi upload-agent -f my_agent.py --wallet-path /path/to/custom/wallets
@@ -158,6 +169,15 @@ def upload(
         env = env_choice.lower()
 
     console.print(f"[dim]Network:[/dim] [yellow]{env.upper()}[/yellow]")
+    console.print()
+
+    # Prompt for track if not provided
+    if not track:
+        track = prompt_track_selection()
+    else:
+        track = track.upper()
+
+    console.print(f"[dim]Track:[/dim] [yellow]{track}[/yellow]")
     console.print()
 
     # Prompt for agent file if not provided
@@ -231,6 +251,7 @@ def upload(
     summary.add_row("📄 File", agent_path.name)
     summary.add_row("📦 Size", f"{len(file_content):,} bytes")
     summary.add_row("🌐 Network", env.upper())
+    summary.add_row("🏁 Track", track)
     summary.add_row("👤 Wallet", f"{wallet}/{hotkey}")
     summary.add_row("🔑 Address", keypair.ss58_address[:16] + "..." + keypair.ss58_address[-8:])
 
@@ -253,7 +274,7 @@ def upload(
                 response = client.post(
                     f"{api_url}/api/v3/miner/upload_agent",
                     files={"agent_file": (agent_path.name, file_content)},
-                    data={"name": name},
+                    data={"name": name, "track": track},
                     headers={
                         "Authorization": f"Bearer {signature_base64}",
                         "Miner-Public-Key": public_key_hex,

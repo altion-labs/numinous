@@ -9,7 +9,11 @@ from neurons.miner.gateway.cache import cached_gateway_call
 from neurons.miner.gateway.error_handler import handle_provider_errors
 from neurons.miner.gateway.providers.chutes import ChutesClient
 from neurons.miner.gateway.providers.desearch import DesearchClient
+from neurons.miner.gateway.providers.lightning_rod import LightningRodClient
+from neurons.miner.gateway.providers.lunar_crush import LunarCrushClient
 from neurons.miner.gateway.providers.numinous_indicia import NuminousIndiciaClient
+
+# from neurons.miner.gateway.providers.numinous_signals import NuminousSignalsClient
 from neurons.miner.gateway.providers.openai import OpenAIClient
 from neurons.miner.gateway.providers.openrouter import OpenRouterClient
 from neurons.miner.gateway.providers.perplexity import PerplexityClient
@@ -19,9 +23,15 @@ from neurons.validator.models.chutes import ChuteStatus
 from neurons.validator.models.chutes import calculate_cost as calculate_chutes_cost
 from neurons.validator.models.desearch import DesearchEndpoint
 from neurons.validator.models.desearch import calculate_cost as calculate_desearch_cost
+from neurons.validator.models.lightning_rod import calculate_cost as calculate_lightning_rod_cost
+from neurons.validator.models.lunar_crush import calculate_cost as calculate_lunar_crush_cost
 from neurons.validator.models.numinous_indicia import (
     calculate_cost as calculate_numinous_indicia_cost,
 )
+
+# from neurons.validator.models.numinous_signals import (
+#     calculate_cost as calculate_numinous_signals_cost,
+# )
 from neurons.validator.models.openai import calculate_cost as calculate_openai_cost
 from neurons.validator.models.openrouter import calculate_cost as calculate_openrouter_cost
 from neurons.validator.models.perplexity import calculate_cost as calculate_perplexity_cost
@@ -392,6 +402,184 @@ async def numinous_indicia_liveuamap(
     return models.GatewayNuminousIndiciaSignalsResponse(
         signals=signals, cost=float(calculate_numinous_indicia_cost())
     )
+
+
+@gateway_router.post("/lunar-crush/topic", response_model=models.GatewayLunarCrushTopicResponse)
+@cached_gateway_call
+@handle_provider_errors("LunarCrush")
+async def lunar_crush_get_topic(
+    request: models.LunarCrushTopicRequest,
+) -> models.GatewayLunarCrushTopicResponse:
+    api_key = os.getenv("LUNAR_CRUSH_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="LUNAR_CRUSH_API_KEY not configured",
+        )
+    client = LunarCrushClient(api_key=api_key)
+    result = await client.get_topic(topic=request.topic)
+    return models.GatewayLunarCrushTopicResponse(
+        **result.model_dump(), cost=calculate_lunar_crush_cost()
+    )
+
+
+@gateway_router.post(
+    "/lunar-crush/time-series", response_model=models.GatewayLunarCrushTimeSeriesResponse
+)
+@cached_gateway_call
+@handle_provider_errors("LunarCrush")
+async def lunar_crush_get_time_series(
+    request: models.LunarCrushTimeSeriesRequest,
+) -> models.GatewayLunarCrushTimeSeriesResponse:
+    api_key = os.getenv("LUNAR_CRUSH_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="LUNAR_CRUSH_API_KEY not configured",
+        )
+    client = LunarCrushClient(api_key=api_key)
+    result = await client.get_topic_time_series(topic=request.topic, bucket=request.bucket)
+    return models.GatewayLunarCrushTimeSeriesResponse(
+        **result.model_dump(), cost=calculate_lunar_crush_cost()
+    )
+
+
+@gateway_router.post("/lunar-crush/news", response_model=models.GatewayLunarCrushNewsResponse)
+@cached_gateway_call
+@handle_provider_errors("LunarCrush")
+async def lunar_crush_get_news(
+    request: models.LunarCrushNewsRequest,
+) -> models.GatewayLunarCrushNewsResponse:
+    api_key = os.getenv("LUNAR_CRUSH_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="LUNAR_CRUSH_API_KEY not configured",
+        )
+    client = LunarCrushClient(api_key=api_key)
+    result = await client.get_topic_news(topic=request.topic)
+    return models.GatewayLunarCrushNewsResponse(
+        **result.model_dump(), cost=calculate_lunar_crush_cost()
+    )
+
+
+@gateway_router.post("/lunar-crush/whatsup", response_model=models.GatewayLunarCrushWhatsupResponse)
+@cached_gateway_call
+@handle_provider_errors("LunarCrush")
+async def lunar_crush_get_whatsup(
+    request: models.LunarCrushWhatsupRequest,
+) -> models.GatewayLunarCrushWhatsupResponse:
+    api_key = os.getenv("LUNAR_CRUSH_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="LUNAR_CRUSH_API_KEY not configured",
+        )
+    client = LunarCrushClient(api_key=api_key)
+    result = await client.get_topic_whatsup(topic=request.topic)
+    return models.GatewayLunarCrushWhatsupResponse(
+        **result.model_dump(), cost=calculate_lunar_crush_cost()
+    )
+
+
+@gateway_router.post("/lunar-crush/posts", response_model=models.GatewayLunarCrushPostsResponse)
+@cached_gateway_call
+@handle_provider_errors("LunarCrush")
+async def lunar_crush_get_posts(
+    request: models.LunarCrushPostsRequest,
+) -> models.GatewayLunarCrushPostsResponse:
+    api_key = os.getenv("LUNAR_CRUSH_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="LUNAR_CRUSH_API_KEY not configured",
+        )
+    client = LunarCrushClient(api_key=api_key)
+    result = await client.get_topic_posts(topic=request.topic, start=request.start, end=request.end)
+    return models.GatewayLunarCrushPostsResponse(
+        **result.model_dump(), cost=calculate_lunar_crush_cost()
+    )
+
+
+@gateway_router.post(
+    "/lunar-crush/coins-list", response_model=models.GatewayLunarCrushCoinsListResponse
+)
+@cached_gateway_call
+@handle_provider_errors("LunarCrush")
+async def lunar_crush_get_coins_list(
+    request: models.LunarCrushCoinsListRequest,
+) -> models.GatewayLunarCrushCoinsListResponse:
+    api_key = os.getenv("LUNAR_CRUSH_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="LUNAR_CRUSH_API_KEY not configured",
+        )
+    client = LunarCrushClient(api_key=api_key)
+    result = await client.get_coins_list()
+    return models.GatewayLunarCrushCoinsListResponse(
+        **result.model_dump(), cost=calculate_lunar_crush_cost()
+    )
+
+
+@gateway_router.post(
+    "/lightning-rod/chat/completions", response_model=models.GatewayLightningRodCompletion
+)
+@cached_gateway_call
+@handle_provider_errors("LightningRod")
+async def lightning_rod_chat_completion(
+    request: models.LightningRodInferenceRequest,
+) -> models.GatewayLightningRodCompletion:
+    api_key = os.getenv("LIGHTNING_ROD_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="LIGHTNING_ROD_API_KEY not configured",
+        )
+
+    client = LightningRodClient(api_key=api_key)
+    messages = [msg.model_dump() for msg in request.messages]
+    result = await client.chat_completion(
+        model=request.model,
+        messages=messages,
+        temperature=request.temperature,
+        max_tokens=request.max_tokens,
+        **(request.model_extra or {}),
+    )
+
+    return models.GatewayLightningRodCompletion(
+        **result.model_dump(), cost=calculate_lightning_rod_cost(result)
+    )
+
+
+# @gateway_router.post(
+#     "/numinous-signals/signals",
+#     response_model=models.GatewayNuminousSignalsResponse,
+# )
+# @cached_gateway_call
+# @handle_provider_errors("NuminousSignals")
+# async def numinous_signals_compute(
+#     request: models.NuminousSignalsRequest,
+# ) -> models.GatewayNuminousSignalsResponse:
+#     api_key = os.getenv("NUMINOUS_SIGNALS_API_KEY")
+#     if not api_key:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="NUMINOUS_SIGNALS_API_KEY not configured",
+#         )
+
+#     client = NuminousSignalsClient(api_key=api_key)
+#     result = await client.compute_signals(
+#         market=request.market,
+#         question=request.question,
+#         relevance_threshold=request.relevance_threshold,
+#         max_events_per_source=request.max_events_per_source,
+#         time_window_hours=request.time_window_hours,
+#     )
+
+#     return models.GatewayNuminousSignalsResponse(
+#         **result.model_dump(), cost=calculate_numinous_signals_cost()
+#     )
 
 
 app.include_router(gateway_router)

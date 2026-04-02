@@ -59,6 +59,7 @@ class TestExportPredictions:
                 "event123",  # unique_event_id
                 11,  # miner_uid
                 "miner_key_1",  # miner_hotkey
+                "MAIN",  # track
                 "weather",  # event_type
                 0.75,  # prediction
                 120,  # interval_start_minutes
@@ -105,6 +106,7 @@ class TestExportPredictions:
                 "event1",
                 1,
                 "miner_hotkey_1",
+                "MAIN",
                 "weather",
                 0.75,
                 120,
@@ -119,6 +121,7 @@ class TestExportPredictions:
                 "event2",
                 2,
                 "miner_hotkey_2",
+                "MAIN",
                 "sports",
                 0.25,
                 240,
@@ -193,6 +196,7 @@ class TestExportPredictions:
             PredictionsModel(
                 unique_event_id="unique_event_id_1",
                 miner_hotkey="neuronHotkey_1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=1.0,
                 interval_start_minutes=previous_interval_minutes,
@@ -203,6 +207,7 @@ class TestExportPredictions:
             PredictionsModel(
                 unique_event_id="unique_event_id_2",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1.0,
                 interval_start_minutes=previous_interval_minutes,
@@ -213,6 +218,7 @@ class TestExportPredictions:
             PredictionsModel(
                 unique_event_id="unique_event_id_3",
                 miner_hotkey="neuronHotkey_3",
+                track="MAIN",
                 miner_uid=3,
                 latest_prediction=1.0,
                 interval_start_minutes=current_interval_minutes,
@@ -251,6 +257,7 @@ class TestExportPredictions:
                         {
                             "unique_event_id": "unique_event_id_1",
                             "provider_type": "market_1",
+                            "track": "MAIN",
                             "prediction": 1.0,
                             "interval_start_minutes": previous_interval_minutes,
                             "interval_agg_prediction": 1.0,
@@ -280,6 +287,7 @@ class TestExportPredictions:
                         {
                             "unique_event_id": "unique_event_id_2",
                             "provider_type": "market_2",
+                            "track": "MAIN",
                             "prediction": 1.0,
                             "interval_start_minutes": previous_interval_minutes,
                             "interval_agg_prediction": 1.0,
@@ -309,6 +317,7 @@ class TestExportPredictions:
                         {
                             "unique_event_id": "unique_event_id_3",
                             "provider_type": "market_3",
+                            "track": "MAIN",
                             "prediction": 1.0,
                             "interval_start_minutes": current_interval_minutes,
                             "interval_agg_prediction": 1.0,

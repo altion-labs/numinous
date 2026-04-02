@@ -18,10 +18,21 @@ from neurons.validator.models.desearch import (
     XPostResponse,
     XPostSummary,
 )
+from neurons.validator.models.lightning_rod import LightningRodCompletion
+from neurons.validator.models.lunar_crush import (
+    LunarCrushCoinsListResponse,
+    LunarCrushNewsResponse,
+    LunarCrushPostsResponse,
+    LunarCrushTimeSeriesResponse,
+    LunarCrushTopicResponse,
+    LunarCrushWhatsupResponse,
+)
 from neurons.validator.models.numinous_indicia import IndiciaSignalsResponse
+from neurons.validator.models.numinous_signals import SignalsResponse
 from neurons.validator.models.openai import OpenAIResponse
 from neurons.validator.models.openrouter import OpenRouterCompletion
 from neurons.validator.models.perplexity import PerplexityCompletion
+from neurons.validator.models.track import TrackEnum
 from neurons.validator.models.vericore import VericoreResponse
 
 
@@ -34,6 +45,7 @@ class NuminousEvent(BaseModel):
     created_at: datetime
     cutoff: datetime
     run_days_before_cutoff: int
+    tracks: list[TrackEnum]
 
 
 class GetEventsResponse(BaseModel):
@@ -78,6 +90,7 @@ class GetEventsResolvedResponse(BaseModel):
 class MinerPrediction(BaseModel):
     unique_event_id: str
     provider_type: str
+    track: TrackEnum
     prediction: float
     interval_start_minutes: int
     interval_datetime: datetime
@@ -111,6 +124,7 @@ class MinerScore(BaseModel):
     answer: float = Field(..., json_schema_extra={"ge": 0, "le": 1})
     miner_hotkey: str
     miner_uid: int
+    track: TrackEnum
     miner_score: float
     validator_hotkey: str
     validator_uid: int
@@ -129,6 +143,7 @@ class MinerAgentWithCode(BaseModel):
     version_id: UUID
     miner_hotkey: str
     miner_uid: int
+    track: TrackEnum
     agent_name: str
     version_number: int
     created_at: datetime
@@ -160,6 +175,7 @@ class AgentRunSubmission(BaseModel):
     run_id: UUID
     miner_uid: int
     miner_hotkey: str
+    track: TrackEnum
     vali_uid: int
     vali_hotkey: str
     status: str
@@ -175,6 +191,7 @@ class PostAgentRunsRequestBody(BaseModel):
 class CreateAgentRunRequest(BaseModel):
     miner_uid: int
     miner_hotkey: str
+    track: TrackEnum
     vali_uid: int
     vali_hotkey: str
     event_id: str
@@ -405,6 +422,31 @@ class GatewayOpenRouterCompletion(OpenRouterCompletion, GatewayCallResponse):
     pass
 
 
+class LightningRodMessage(BaseModel):
+    role: str = Field(..., description="Message role: 'system', 'user', 'assistant', or 'tool'")
+    content: typing.Optional[typing.Union[str, list]] = Field(
+        "", description="Message content (can be None for tool calls)"
+    )
+
+    model_config = ConfigDict(extra="allow")
+
+
+class LightningRodInferenceRequest(GatewayCall):
+    model: str = Field(
+        default="LightningRodLabs/foresight-v3",
+        description="Lightning Rod model ID",
+    )
+    messages: list[LightningRodMessage] = Field(..., description="List of chat messages")
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Sampling temperature")
+    max_tokens: typing.Optional[int] = Field(default=None, description="Maximum tokens to generate")
+
+    model_config = ConfigDict(extra="allow")
+
+
+class GatewayLightningRodCompletion(LightningRodCompletion, GatewayCallResponse):
+    pass
+
+
 class VericoreCalculateRatingRequest(GatewayCall):
     statement: str = Field(..., description="Statement to verify")
     generate_preview: bool = Field(default=False, description="Generate a preview URL")
@@ -425,6 +467,69 @@ class NuminousIndiciaLiveuamapRequest(GatewayCall):
 
 
 class GatewayNuminousIndiciaSignalsResponse(IndiciaSignalsResponse, GatewayCallResponse):
+    pass
+
+
+class LunarCrushTopicRequest(GatewayCall):
+    topic: str
+
+
+class LunarCrushTimeSeriesRequest(GatewayCall):
+    topic: str
+    bucket: str = "day"
+
+
+class LunarCrushNewsRequest(GatewayCall):
+    topic: str
+
+
+class LunarCrushWhatsupRequest(GatewayCall):
+    topic: str
+
+
+class LunarCrushPostsRequest(GatewayCall):
+    topic: str
+    start: typing.Optional[int] = None
+    end: typing.Optional[int] = None
+
+
+class LunarCrushCoinsListRequest(GatewayCall):
+    pass
+
+
+class GatewayLunarCrushTopicResponse(LunarCrushTopicResponse, GatewayCallResponse):
+    pass
+
+
+class GatewayLunarCrushTimeSeriesResponse(LunarCrushTimeSeriesResponse, GatewayCallResponse):
+    pass
+
+
+class GatewayLunarCrushNewsResponse(LunarCrushNewsResponse, GatewayCallResponse):
+    pass
+
+
+class GatewayLunarCrushWhatsupResponse(LunarCrushWhatsupResponse, GatewayCallResponse):
+    pass
+
+
+class GatewayLunarCrushPostsResponse(LunarCrushPostsResponse, GatewayCallResponse):
+    pass
+
+
+class GatewayLunarCrushCoinsListResponse(LunarCrushCoinsListResponse, GatewayCallResponse):
+    pass
+
+
+class NuminousSignalsRequest(GatewayCall):
+    market: typing.Optional[str] = Field(None, description="Polymarket URL, slug, or condition ID")
+    question: typing.Optional[str] = Field(None, description="Free-text question")
+    relevance_threshold: float = Field(0.25, ge=0.0, le=1.0)
+    max_events_per_source: int = Field(25, ge=1, le=100)
+    time_window_hours: int = Field(72, ge=1, le=720)
+
+
+class GatewayNuminousSignalsResponse(SignalsResponse, GatewayCallResponse):
     pass
 
 

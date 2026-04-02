@@ -295,6 +295,7 @@ class TestScoring:
         prediction = PredictionsModel(
             unique_event_id="ev1",
             miner_hotkey="hotkey3",
+            track="MAIN",
             miner_uid=3,
             latest_prediction=1,
             interval_start_minutes=100,
@@ -321,6 +322,7 @@ class TestScoring:
         prediction = PredictionsModel(
             unique_event_id="ev1",
             miner_hotkey="hotkey1",
+            track="MAIN",
             miner_uid=1,
             latest_prediction=1,
             interval_start_minutes=100,
@@ -360,6 +362,7 @@ class TestScoring:
                     {
                         ScoreNames.miner_uid: 1,
                         ScoreNames.miner_hotkey: "hotkey1",
+                        ScoreNames.track: "MAIN",
                         ScoreNames.interval_start: 100240,
                         ScoreNames.interval_agg_prediction: pd.NA,
                     }
@@ -372,6 +375,7 @@ class TestScoring:
                     {
                         ScoreNames.miner_uid: 1,
                         ScoreNames.miner_hotkey: "hotkey1",
+                        ScoreNames.track: "MAIN",
                         ScoreNames.interval_start: 100480,
                         ScoreNames.interval_agg_prediction: 0.8,
                     }
@@ -387,6 +391,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1, 2],
                 ScoreNames.miner_hotkey: ["hotkey1", "hotkey2"],
+                ScoreNames.track: ["MAIN", "MAIN"],
                 ScoreNames.miner_registered_minutes: [100, 200],
             }
         )
@@ -406,6 +411,7 @@ class TestScoring:
         assert result_df.columns.to_list() == [
             ScoreNames.miner_uid,
             ScoreNames.miner_hotkey,
+            ScoreNames.track,
             ScoreNames.miner_registered_minutes,
             ScoreNames.interval_idx,
             ScoreNames.interval_start,
@@ -453,6 +459,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1, 2],
                 ScoreNames.miner_hotkey: ["hotkey1", "hotkey2"],
+                ScoreNames.track: ["MAIN", "MAIN"],
                 ScoreNames.miner_registered_minutes: [50, 50],
                 ScoreNames.interval_start: [100, 100],
                 ScoreNames.interval_agg_prediction: [pd.NA, 0.8],
@@ -469,6 +476,7 @@ class TestScoring:
                 agent_version_id="agent_v1",
                 miner_uid=1,
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 status=AgentRunStatus.SANDBOX_TIMEOUT,
                 is_final=True,
             )
@@ -502,6 +510,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1, 2],
                 ScoreNames.miner_hotkey: ["hotkey1", "hotkey2"],
+                ScoreNames.track: ["MAIN", "MAIN"],
                 ScoreNames.miner_registered_minutes: [50, 150],  # miner 2 registered after interval
                 ScoreNames.interval_start: [100, 100],
                 ScoreNames.interval_agg_prediction: [pd.NA, pd.NA],
@@ -518,6 +527,7 @@ class TestScoring:
                 agent_version_id="agent_v1",
                 miner_uid=1,
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 status=AgentRunStatus.INTERNAL_AGENT_ERROR,
                 is_final=True,
             )
@@ -545,6 +555,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1, 1, 1, 2, 2],
                 ScoreNames.miner_hotkey: ["hk1", "hk1", "hk1", "hk2", "hk2"],
+                ScoreNames.track: ["MAIN", "MAIN", "MAIN", "MAIN", "MAIN"],
                 ScoreNames.interval_idx: [0, 1, 2, 0, 1],
                 ScoreNames.interval_agg_prediction: [0.7, 0.8, 0.9, 0.5, 0.6],
                 ScoreNames.weight: [0.11, 0.33, 1.0, 0.5, 1.0],
@@ -557,6 +568,7 @@ class TestScoring:
         assert list(result_df.columns) == [
             ScoreNames.miner_uid,
             ScoreNames.miner_hotkey,
+            ScoreNames.track,
             ScoreNames.rema_prediction,
         ]
 
@@ -597,6 +609,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1],
                 ScoreNames.miner_hotkey: ["hotkey1"],
+                ScoreNames.track: ["MAIN"],
                 ScoreNames.miner_registered_minutes: [0],
             }
         )
@@ -651,6 +664,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id="evt_imputation_test",
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=0.8,
                 interval_start_minutes=scoring_window_start_minutes,
@@ -663,6 +677,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id="evt_imputation_test",
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=0.8,
                 interval_start_minutes=scoring_window_start_minutes
@@ -678,6 +693,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1, 2],
                 ScoreNames.miner_hotkey: ["hotkey1", "hotkey2"],
+                ScoreNames.track: ["MAIN", "MAIN"],
                 ScoreNames.miner_registered_minutes: [
                     scoring_window_start_minutes - 1,  # miner 1: registered before
                     scoring_window_start_minutes - 1,  # miner 2: also registered before
@@ -694,6 +710,7 @@ class TestScoring:
                     agent_version_id="agent_v2",
                     miner_uid=2,
                     miner_hotkey="hotkey2",
+                    track="MAIN",
                     status=AgentRunStatus.SANDBOX_TIMEOUT,
                     is_final=True,
                 )
@@ -750,6 +767,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1],
                 ScoreNames.miner_hotkey: ["hotkey1"],
+                ScoreNames.track: ["MAIN"],
                 ScoreNames.miner_registered_minutes: [
                     scoring_window_start_minutes - AGGREGATION_INTERVAL_LENGTH_MINUTES
                 ],
@@ -797,6 +815,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id="evt_normal",
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=0.8,
                 interval_start_minutes=scoring_window_start_minutes,  # interval 0 (older, higher weight)
@@ -808,6 +827,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id="evt_normal",
                 miner_hotkey="hotkey1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=0.8,
                 interval_start_minutes=event_cutoff_start_minutes
@@ -825,6 +845,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1],
                 ScoreNames.miner_hotkey: ["hotkey1"],
+                ScoreNames.track: ["MAIN"],
                 ScoreNames.miner_registered_minutes: [
                     scoring_window_start_minutes - AGGREGATION_INTERVAL_LENGTH_MINUTES
                 ],
@@ -894,6 +915,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id="evt_window_exclusion",
                 miner_hotkey="miner_early",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=0.7,
                 interval_start_minutes=scoring_window_start_minutes,
@@ -906,6 +928,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id="evt_window_exclusion",
                 miner_hotkey="miner_early",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=0.7,
                 interval_start_minutes=scoring_window_start_minutes
@@ -919,6 +942,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id="evt_window_exclusion",
                 miner_hotkey="miner_late",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=0.9,
                 interval_start_minutes=scoring_window_start_minutes,
@@ -931,6 +955,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id="evt_window_exclusion",
                 miner_hotkey="miner_late",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=0.9,
                 interval_start_minutes=scoring_window_start_minutes
@@ -951,6 +976,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1, 2],
                 ScoreNames.miner_hotkey: ["miner_early", "miner_late"],
+                ScoreNames.track: ["MAIN", "MAIN"],
                 ScoreNames.miner_registered_minutes: [
                     scoring_window_start_minutes
                     - AGGREGATION_INTERVAL_LENGTH_MINUTES,  # before window
@@ -1010,6 +1036,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id=event.unique_event_id,
                 miner_hotkey="miner_early",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=0.7,
                 interval_start_minutes=scoring_window_start_minutes,
@@ -1021,6 +1048,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id=event.unique_event_id,
                 miner_hotkey="miner_late",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=0.9,
                 interval_start_minutes=scoring_window_start_minutes,
@@ -1036,6 +1064,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1, 2],
                 ScoreNames.miner_hotkey: ["miner_early", "miner_late"],
+                ScoreNames.track: ["MAIN", "MAIN"],
                 ScoreNames.miner_registered_minutes: [
                     scoring_window_start_minutes - 1,  # before window
                     scoring_window_start_minutes + 1,  # after window
@@ -1080,6 +1109,7 @@ class TestScoring:
             {
                 ScoreNames.miner_uid: [1],
                 ScoreNames.miner_hotkey: ["miner1"],
+                ScoreNames.track: ["MAIN"],
                 ScoreNames.miner_registered_minutes: [
                     scoring_window_start_minutes - AGGREGATION_INTERVAL_LENGTH_MINUTES
                 ],
@@ -1090,6 +1120,7 @@ class TestScoring:
             PredictionsModel(
                 unique_event_id="evt_window_intervals",
                 miner_hotkey="miner1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=0.8,
                 interval_start_minutes=event_cutoff_start_minutes
@@ -1118,6 +1149,7 @@ class TestScoring:
                 {
                     ScoreNames.miner_uid: [1, 2],
                     ScoreNames.miner_hotkey: ["hk1", "hk2"],
+                    ScoreNames.track: ["MAIN", "MAIN"],
                     ScoreNames.rema_prediction: [0.5, 0.6],
                     ScoreNames.rema_peer_score: [0.1, 0.2],
                 },
@@ -1130,6 +1162,7 @@ class TestScoring:
                 {
                     ScoreNames.miner_uid: [1, 2],
                     ScoreNames.miner_hotkey: ["hk1", "hk2"],
+                    ScoreNames.track: ["MAIN", "MAIN"],
                     ScoreNames.rema_prediction: [0.5, 0.6],
                     ScoreNames.rema_peer_score: [0.1, "bad"],
                 },
@@ -1142,6 +1175,7 @@ class TestScoring:
                 {
                     ScoreNames.miner_uid: [1],
                     ScoreNames.miner_hotkey: ["hk1"],
+                    ScoreNames.track: ["MAIN"],
                     ScoreNames.rema_prediction: ["bad"],
                     ScoreNames.rema_peer_score: ["bad"],
                 },
@@ -1404,6 +1438,7 @@ class TestScoring:
                     PredictionsModel(
                         unique_event_id="event2",
                         miner_hotkey="hotkey1",
+                        track="MAIN",
                         miner_uid=1,
                         latest_prediction=1.0,
                         interval_start_minutes=event2_scoring_window_start
@@ -1413,6 +1448,7 @@ class TestScoring:
                     PredictionsModel(
                         unique_event_id="event2",
                         miner_hotkey="hotkey2",
+                        track="MAIN",
                         miner_uid=2,
                         latest_prediction=1.0,
                         interval_start_minutes=event2_scoring_window_start
@@ -1429,6 +1465,7 @@ class TestScoring:
                     PredictionsModel(
                         unique_event_id=expected_event_id,
                         miner_hotkey="hotkey2",
+                        track="MAIN",
                         miner_uid=2,
                         latest_prediction=1.0,
                         interval_start_minutes=event1_scoring_window_start
@@ -1438,6 +1475,7 @@ class TestScoring:
                     PredictionsModel(
                         unique_event_id=expected_event_id,
                         miner_hotkey="hotkey3",
+                        track="MAIN",
                         miner_uid=3,
                         latest_prediction=1.0,
                         interval_start_minutes=event1_scoring_window_start

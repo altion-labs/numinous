@@ -35,6 +35,7 @@ DEFAULT_POWER_DECAY_WEIGHT_EXPONENT = 2
 class ScoreNames:
     miner_uid: str = "miner_uid"
     miner_hotkey: str = "miner_hotkey"
+    track: str = "track"
     registered_date: str = "registered_date"
     miner_registered_minutes: str = "miner_registered_minutes"
     interval_idx: str = "interval_idx"
@@ -283,6 +284,7 @@ class Scoring(AbstractTask):
             [
                 ScoreNames.miner_uid,
                 ScoreNames.miner_hotkey,
+                ScoreNames.track,
                 ScoreNames.miner_registered_minutes,
                 ScoreNames.interval_idx,
                 ScoreNames.interval_start,
@@ -322,11 +324,15 @@ class Scoring(AbstractTask):
         ].astype("Float64")
 
         failed_miners = {(run.miner_uid, run.miner_hotkey) for run in failed_runs}
+        failed_miner_track = {(run.miner_uid, run.miner_hotkey): run.track for run in failed_runs}
 
-        # Only impute 0.5 for miners with failed runs
         missing_predictions = interval_scores_df[ScoreNames.interval_agg_prediction].isnull()
         has_failed_run = interval_scores_df.apply(
-            lambda row: (row[ScoreNames.miner_uid], row[ScoreNames.miner_hotkey]) in failed_miners,
+            lambda row: (
+                row[ScoreNames.miner_uid],
+                row[ScoreNames.miner_hotkey],
+            )
+            in failed_miners,
             axis=1,
         )
 
@@ -334,6 +340,17 @@ class Scoring(AbstractTask):
         interval_scores_df.loc[
             should_impute, ScoreNames.interval_agg_prediction
         ] = imputed_prediction
+
+        # Fill NaN track for imputed rows using the failed run's track
+        imputed_missing_track = should_impute & interval_scores_df[ScoreNames.track].isna()
+        interval_scores_df.loc[imputed_missing_track, ScoreNames.track] = interval_scores_df.loc[
+            imputed_missing_track
+        ].apply(
+            lambda row: failed_miner_track.get(
+                (row[ScoreNames.miner_uid], row[ScoreNames.miner_hotkey])
+            ),
+            axis=1,
+        )
 
         interval_scores_df = interval_scores_df.dropna(subset=[ScoreNames.interval_agg_prediction])
 
@@ -348,7 +365,9 @@ class Scoring(AbstractTask):
 
         # Group by miner and calculate weighted average prediction
         scores_df = (
-            interval_scores_df.groupby([ScoreNames.miner_uid, ScoreNames.miner_hotkey])
+            interval_scores_df.groupby(
+                [ScoreNames.miner_uid, ScoreNames.miner_hotkey, ScoreNames.track]
+            )
             .agg(
                 weighted_prediction_sum=(ScoreNames.weighted_prediction, "sum"),
                 weight_sum=(ScoreNames.weight, "sum"),
@@ -363,6 +382,7 @@ class Scoring(AbstractTask):
             [
                 ScoreNames.miner_uid,
                 ScoreNames.miner_hotkey,
+                ScoreNames.track,
                 ScoreNames.rema_prediction,
             ]
         ]
@@ -449,6 +469,7 @@ class Scoring(AbstractTask):
                     event_id=event_id,
                     miner_uid=record[ScoreNames.miner_uid],
                     miner_hotkey=record[ScoreNames.miner_hotkey],
+                    track=record[ScoreNames.track],
                     prediction=record[ScoreNames.rema_prediction],
                     event_score=record[ScoreNames.rema_peer_score],
                     spec_version=self.spec_version,

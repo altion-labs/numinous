@@ -325,20 +325,11 @@ class DatabaseOperations:
         if row is not None:
             return row[0]
 
-    async def get_events_to_predict(self) -> Iterable[tuple[str]]:
-        return await self.__db_client.many(
-            """
-                SELECT
-                    unique_event_id,
-                    event_id,
-                    market_type,
-                    event_type,
-                    title,
-                    description,
-                    cutoff,
-                    metadata
-                FROM
-                    events
+    async def get_events_to_predict(self) -> list[EventsModel]:
+        rows = await self.__db_client.many(
+            f"""
+                SELECT {', '.join(EVENTS_FIELDS)}
+                FROM events
                 WHERE
                     status = ?
                     AND datetime(CURRENT_TIMESTAMP) < datetime(cutoff)
@@ -347,7 +338,9 @@ class DatabaseOperations:
                     unique_event_id ASC
             """,
             parameters=[EventStatus.PENDING],
+            use_row_factory=True,
         )
+        return self._parse_rows(model=EventsModel, rows=rows)
 
     async def get_last_event_from(self) -> str | None:
         row = await self.__db_client.one(
@@ -376,6 +369,7 @@ class DatabaseOperations:
                     p.unique_event_id,
                     p.miner_uid,
                     p.miner_hotkey,
+                    p.track,
                     e.event_type,
                     p.latest_prediction,
                     p.interval_start_minutes,
@@ -515,6 +509,7 @@ class DatabaseOperations:
             "unique_event_id",
             "miner_hotkey",
             "miner_uid",
+            "track",
             "latest_prediction",
             "interval_start_minutes",
             "interval_agg_prediction",
@@ -531,6 +526,7 @@ class DatabaseOperations:
                     unique_event_id,
                     miner_hotkey,
                     miner_uid,
+                    track,
                     latest_prediction,
                     interval_start_minutes,
                     interval_agg_prediction,
@@ -545,11 +541,12 @@ class DatabaseOperations:
                     ?,
                     ?,
                     ?,
+                    ?,
                     1,
                     ?,
                     ?
                 )
-                ON CONFLICT(unique_event_id, miner_uid, miner_hotkey, interval_start_minutes)
+                ON CONFLICT(unique_event_id, miner_uid, miner_hotkey, track, interval_start_minutes)
                 DO UPDATE SET
                     latest_prediction = excluded.latest_prediction,
                     interval_agg_prediction = (interval_agg_prediction * interval_count + excluded.interval_agg_prediction) / (interval_count + 1),
@@ -574,7 +571,8 @@ class DatabaseOperations:
 
         # Convert each event into a tuple of values in the same order as fields_to_insert
         event_tuples = [
-            tuple(getattr(event, field_name) for field_name in fields_to_insert) for event in events
+            tuple(event.model_dump()[field_name] for field_name in fields_to_insert)
+            for event in events
         ]
 
         sql = f"""
@@ -673,9 +671,10 @@ class DatabaseOperations:
         unique_event_id: str,
         miner_uid: int,
         miner_hotkey: str,
+        track: str,
     ) -> Optional[PredictionsModel]:
         """
-        Get the latest prediction for the given event and miner, regardless of interval.
+        Get the latest prediction for the given event, miner, and track, regardless of interval.
         Returns the most recent prediction, or None if no prediction exists.
         """
         rows = await self.__db_client.many(
@@ -687,12 +686,13 @@ class DatabaseOperations:
                 unique_event_id = ?
                 AND miner_uid = ?
                 AND miner_hotkey = ?
+                AND track = ?
             ORDER BY
                 interval_start_minutes DESC,
                 updated_at DESC
             LIMIT 1
             """,
-            parameters=[unique_event_id, miner_uid, miner_hotkey],
+            parameters=[unique_event_id, miner_uid, miner_hotkey, track],
             use_row_factory=True,
         )
 
@@ -805,6 +805,7 @@ class DatabaseOperations:
             "event_id",
             "miner_uid",
             "miner_hotkey",
+            "track",
             "prediction",
             "event_score",
             "spec_version",
@@ -821,7 +822,7 @@ class DatabaseOperations:
                 INSERT INTO scores ({columns})
                 VALUES ({placeholders})
                 ON CONFLICT
-                    (event_id, miner_uid, miner_hotkey)
+                    (event_id, miner_uid, miner_hotkey, track)
                 DO UPDATE SET
                     prediction = excluded.prediction,
                     event_score = excluded.event_score,
@@ -933,7 +934,7 @@ class DatabaseOperations:
                 VALUES
                     ({placeholders})
                 ON CONFLICT
-                    (miner_uid, miner_hotkey, version_number)
+                    (miner_uid, miner_hotkey, track, version_number)
                 DO UPDATE SET
                     file_path = excluded.file_path,
                     pulled_at = CURRENT_TIMESTAMP
@@ -969,7 +970,7 @@ class DatabaseOperations:
                     SELECT
                         {', '.join(MINER_AGENTS_FIELDS)},
                         ROW_NUMBER() OVER (
-                            PARTITION BY miner_uid, miner_hotkey
+                            PARTITION BY miner_uid, miner_hotkey, track
                             ORDER BY version_number DESC
                         ) as rn
                     FROM
@@ -1008,6 +1009,7 @@ class DatabaseOperations:
             "agent_version_id",
             "miner_uid",
             "miner_hotkey",
+            "track",
             "status",
             "exported",
             "is_final",
@@ -1020,6 +1022,7 @@ class DatabaseOperations:
                 run.agent_version_id,
                 run.miner_uid,
                 run.miner_hotkey,
+                run.track,
                 run.status.value,
                 1 if run.exported else 0,
                 1 if run.is_final else 0,
