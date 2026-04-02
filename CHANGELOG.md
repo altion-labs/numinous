@@ -1,5 +1,13 @@
 # Release Notes
 
+## [2.1.4] - 2026-03-30
+- **Tracks**: Miners can now participate in multiple tracks simultaneously, each with its own agent, scoring pool, and weights. Upload, test, link services, and list agents per track via `--track` flag or interactive prompt.
+- **Sandbox**: Per-track endpoint filtering — each track defines which gateway endpoints agents can access
+- **Integration**: LunarCrush social intelligence API integration (sentiment, news, time series, social posts, coins data)
+- **Integration**: Lightning Rod API integration
+- **Integration**: Numinous Signals API integration
+
+
 ## [2.1.3] - 2026-03-06
 - **Integration**: Numinous Indicia signals API integration (X-OSINT and LiveUAMap geopolitical intelligence)
 

@@ -20,6 +20,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="5GTest...",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
 
@@ -46,6 +47,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_version_1",
             miner_uid=99,
             miner_hotkey="hotkey_xyz",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=True,
             is_final=True,
@@ -71,6 +73,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=10,
             miner_hotkey="hotkey_10",
+            track="MAIN",
             status=AgentRunStatus.INTERNAL_AGENT_ERROR,
         )
 
@@ -84,6 +87,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=1,
         )
@@ -95,6 +99,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=0,
         )
@@ -108,6 +113,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             exported=True,
         )
@@ -121,6 +127,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             is_final=1,
         )
@@ -132,6 +139,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=1,
             miner_hotkey="hotkey_1",
+            track="MAIN",
             status=AgentRunStatus.SANDBOX_TIMEOUT,
             is_final=0,
         )
@@ -153,6 +161,7 @@ class TestAgentRunsModel:
                 agent_version_id="agent_v1",
                 miner_uid=1,
                 miner_hotkey="hotkey_1",
+                track="MAIN",
                 status=status,
             )
             assert model.status == status
@@ -166,6 +175,7 @@ class TestAgentRunsModel:
                 agent_version_id="agent_v1",
                 miner_uid=1,
                 miner_hotkey="hotkey_1",
+                track="MAIN",
                 status="invalid_status",
             )
 
@@ -178,6 +188,7 @@ class TestAgentRunsModel:
                 agent_version_id="agent_v1",
                 miner_uid="not_an_int",
                 miner_hotkey="hotkey_1",
+                track="MAIN",
                 status=AgentRunStatus.SUCCESS,
             )
 
@@ -188,6 +199,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="5GTest...",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
         )
         assert model.primary_key == ["run_id"]
@@ -200,6 +212,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="hotkey_42",
+            track="MAIN",
             status=AgentRunStatus.SANDBOX_TIMEOUT,
             is_final=False,
         )
@@ -212,6 +225,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="hotkey_42",
+            track="MAIN",
             status=AgentRunStatus.SANDBOX_TIMEOUT,
             is_final=False,
         )
@@ -223,6 +237,7 @@ class TestAgentRunsModel:
             agent_version_id="agent_v1",
             miner_uid=42,
             miner_hotkey="hotkey_42",
+            track="MAIN",
             status=AgentRunStatus.SUCCESS,
             is_final=True,
         )

@@ -536,6 +536,7 @@ class TestDbOperationsPart3(TestDbOperationsBase):
                         event_id=event.event_id,
                         miner_uid=miner_uid,
                         miner_hotkey=f"hk_{miner_uid}",
+                        track="MAIN",
                         prediction=miner_uid / 10,
                         event_score=0.5,
                         spec_version=1,

@@ -10,6 +10,7 @@ from bittensor import AsyncSubtensor
 
 from neurons.validator.db.operations import DatabaseOperations
 from neurons.validator.models.agent_runs import AgentRunsModel, AgentRunStatus
+from neurons.validator.models.event import EventsModel, EventStatus
 from neurons.validator.models.miner_agent import MinerAgentsModel
 from neurons.validator.models.numinous_client import CreateAgentRunRequest, CreateAgentRunResponse
 from neurons.validator.models.prediction import PredictionsModel
@@ -67,15 +68,16 @@ def mock_subtensor_cm():
 
 @pytest.fixture
 def sample_event_tuple():
-    return (
-        "event_123",
-        "external_event_123",
-        "polymarket",
-        "llm_generated",
-        "Will it rain?",
-        "Weather forecast unclear",
-        datetime(2025, 12, 31, tzinfo=timezone.utc),
-        "{}",
+    return EventsModel(
+        unique_event_id="event_123",
+        event_id="external_event_123",
+        market_type="polymarket",
+        event_type="llm_generated",
+        title="Will it rain?",
+        description="Weather forecast unclear",
+        status=EventStatus.PENDING,
+        metadata="{}",
+        cutoff=datetime(2025, 12, 31, tzinfo=timezone.utc),
     )
 
 
@@ -85,6 +87,7 @@ def sample_agent():
         version_id="a23e4567-e89b-12d3-a456-426614174000",
         miner_uid=42,
         miner_hotkey="5HotKey123",
+        track="MAIN",
         agent_name="test_agent",
         version_number=1,
         file_path="/tmp/test_agent.py",
@@ -617,6 +620,7 @@ class TestRunAgentsFiltering:
             version_id="v1",
             miner_uid=42,
             miner_hotkey="hotkey1",
+            track="MAIN",
             agent_name="agent1",
             version_number=1,
             file_path="/tmp/a1.py",
@@ -627,6 +631,7 @@ class TestRunAgentsFiltering:
             version_id="v2",
             miner_uid=99,
             miner_hotkey="hotkey2",
+            track="MAIN",
             agent_name="agent2",
             version_number=1,
             file_path="/tmp/a2.py",
@@ -637,6 +642,7 @@ class TestRunAgentsFiltering:
             version_id="v3",
             miner_uid=100,
             miner_hotkey="hotkey3",
+            track="MAIN",
             agent_name="agent3",
             version_number=1,
             file_path="/tmp/a3.py",
@@ -670,6 +676,170 @@ class TestRunAgentsFiltering:
         assert len(result) == 2
         assert result[0] == agent1
         assert result[1] == agent3
+
+
+class TestRunAgentsTrackFiltering:
+    async def test_skip_agent_when_track_not_in_event(
+        self,
+        mock_db_operations,
+        mock_sandbox_manager,
+        mock_subtensor_cm,
+        mock_api_client,
+        mock_logger,
+    ):
+        main_event = EventsModel(
+            unique_event_id="event_main_only",
+            event_id="ext_1",
+            market_type="polymarket",
+            event_type="llm_generated",
+            title="Main only event",
+            description="desc",
+            status=EventStatus.PENDING,
+            metadata="{}",
+            cutoff=datetime(2025, 12, 31, tzinfo=timezone.utc),
+            tracks='["MAIN"]',
+        )
+
+        signal_agent = MinerAgentsModel(
+            version_id="v_signal",
+            miner_uid=42,
+            miner_hotkey="5HotKey123",
+            track="SIGNAL",
+            agent_name="signal_agent",
+            version_number=1,
+            file_path="/tmp/signal.py",
+            pulled_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+        )
+
+        task = RunAgents(
+            interval_seconds=600.0,
+            db_operations=mock_db_operations,
+            sandbox_manager=mock_sandbox_manager,
+            netuid=99,
+            subtensor=mock_subtensor_cm,
+            api_client=mock_api_client,
+            logger=mock_logger,
+        )
+
+        await task.execute_all([main_event], [signal_agent], interval_start_minutes=1000)
+
+        mock_db_operations.get_latest_prediction_for_event_and_miner.assert_not_called()
+
+    async def test_execute_agent_when_track_matches(
+        self,
+        mock_db_operations,
+        mock_sandbox_manager,
+        mock_subtensor_cm,
+        mock_api_client,
+        mock_logger,
+        sample_agent,
+    ):
+        event = EventsModel(
+            unique_event_id="event_main",
+            event_id="ext_1",
+            market_type="polymarket",
+            event_type="llm_generated",
+            title="Main event",
+            description="desc",
+            status=EventStatus.PENDING,
+            metadata="{}",
+            cutoff=datetime(2025, 12, 31, tzinfo=timezone.utc),
+            tracks='["MAIN"]',
+        )
+
+        task = RunAgents(
+            interval_seconds=600.0,
+            db_operations=mock_db_operations,
+            sandbox_manager=mock_sandbox_manager,
+            netuid=99,
+            subtensor=mock_subtensor_cm,
+            api_client=mock_api_client,
+            logger=mock_logger,
+        )
+        task.execute_with_semaphore = AsyncMock()
+
+        await task.execute_all([event], [sample_agent], interval_start_minutes=1000)
+
+        task.execute_with_semaphore.assert_called_once()
+
+    async def test_mixed_tracks_filters_correctly(
+        self,
+        mock_db_operations,
+        mock_sandbox_manager,
+        mock_subtensor_cm,
+        mock_api_client,
+        mock_logger,
+    ):
+        main_only_event = EventsModel(
+            unique_event_id="event_main_only",
+            event_id="ext_1",
+            market_type="polymarket",
+            event_type="llm_generated",
+            title="Main only",
+            description="desc",
+            status=EventStatus.PENDING,
+            metadata="{}",
+            cutoff=datetime(2025, 12, 31, tzinfo=timezone.utc),
+            tracks='["MAIN"]',
+        )
+
+        both_tracks_event = EventsModel(
+            unique_event_id="event_both",
+            event_id="ext_2",
+            market_type="polymarket",
+            event_type="llm_generated",
+            title="Both tracks",
+            description="desc",
+            status=EventStatus.PENDING,
+            metadata="{}",
+            cutoff=datetime(2025, 12, 31, tzinfo=timezone.utc),
+            tracks='["MAIN", "SIGNAL"]',
+        )
+
+        main_agent = MinerAgentsModel(
+            version_id="v_main",
+            miner_uid=42,
+            miner_hotkey="5HotKey123",
+            track="MAIN",
+            agent_name="main_agent",
+            version_number=1,
+            file_path="/tmp/main.py",
+            pulled_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+        )
+
+        signal_agent = MinerAgentsModel(
+            version_id="v_signal",
+            miner_uid=43,
+            miner_hotkey="5HotKey456",
+            track="SIGNAL",
+            agent_name="signal_agent",
+            version_number=1,
+            file_path="/tmp/signal.py",
+            pulled_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+        )
+
+        task = RunAgents(
+            interval_seconds=600.0,
+            db_operations=mock_db_operations,
+            sandbox_manager=mock_sandbox_manager,
+            netuid=99,
+            subtensor=mock_subtensor_cm,
+            api_client=mock_api_client,
+            logger=mock_logger,
+        )
+        task.execute_with_semaphore = AsyncMock()
+
+        await task.execute_all(
+            [main_only_event, both_tracks_event],
+            [main_agent, signal_agent],
+            interval_start_minutes=1000,
+        )
+
+        # main_agent runs on both events (2), signal_agent only on both_tracks_event (1) = 3 total
+        assert task.execute_with_semaphore.call_count == 3
 
 
 class TestRunAgentsParsing:
@@ -754,6 +924,7 @@ class TestRunAgentsIdempotency:
             unique_event_id="event_123",
             miner_uid=42,
             miner_hotkey="5HotKey123",
+            track="MAIN",
             latest_prediction=0.75,
             interval_start_minutes=current_interval,
             interval_agg_prediction=0.75,
@@ -831,9 +1002,8 @@ class TestRunAgentsIdempotency:
         task.execute_agent_for_event.assert_called_once()
 
         call_args = task.execute_agent_for_event.call_args[1]
-        assert call_args["event_id"] == "event_123"
+        assert call_args["event"] == sample_event_tuple
         assert call_args["agent"] == sample_agent
-        assert call_args["event_tuple"] == sample_event_tuple
 
     @patch("neurons.validator.tasks.run_agents.datetime")
     async def test_replicate_when_prediction_exists_in_different_interval(
@@ -866,6 +1036,7 @@ class TestRunAgentsIdempotency:
             unique_event_id="event_123",
             miner_uid=42,
             miner_hotkey="5HotKey123",
+            track="MAIN",
             latest_prediction=0.75,
             interval_start_minutes=100,
             interval_agg_prediction=0.75,
@@ -1257,9 +1428,8 @@ class TestRunAgentsErrorLogging:
         task.run_sandbox = AsyncMock(return_value=error_result)
 
         await task.execute_agent_for_event(
-            event_id="event_123",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -1304,9 +1474,8 @@ class TestRunAgentsErrorLogging:
         task.run_sandbox = AsyncMock(return_value=timeout_result)
 
         await task.execute_agent_for_event(
-            event_id="event_123",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -1350,9 +1519,8 @@ class TestRunAgentsErrorLogging:
         task.run_sandbox = AsyncMock(return_value=invalid_result)
 
         await task.execute_agent_for_event(
-            event_id="event_123",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -1392,9 +1560,8 @@ class TestRunAgentsErrorLogging:
         task.run_sandbox = AsyncMock(return_value=None)
 
         await task.execute_agent_for_event(
-            event_id="event_123",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -1999,9 +2166,8 @@ class TestRunAgentsRunCreation:
         task.run_sandbox = AsyncMock(return_value=success_result)
 
         await task.execute_agent_for_event(
-            event_id="event_123",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -2047,9 +2213,8 @@ class TestRunAgentsRunCreation:
         task.run_sandbox = AsyncMock(return_value=None)  # Timeout
 
         await task.execute_agent_for_event(
-            event_id="event_timeout",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -2095,9 +2260,8 @@ class TestRunAgentsRunCreation:
         task.run_sandbox = AsyncMock(return_value=error_result)
 
         await task.execute_agent_for_event(
-            event_id="event_error",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -2142,9 +2306,8 @@ class TestRunAgentsRunCreation:
         task.run_sandbox = AsyncMock(return_value=invalid_result)
 
         await task.execute_agent_for_event(
-            event_id="event_invalid",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -2189,9 +2352,8 @@ class TestRunAgentsRunCreation:
         task.run_sandbox = AsyncMock(return_value=success_result)
 
         await task.execute_agent_for_event(
-            event_id="event_123",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -2243,9 +2405,8 @@ class TestRunAgentsRunCreation:
         task.run_sandbox = AsyncMock(return_value=error_result)
 
         await task.execute_agent_for_event(
-            event_id="event_error",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -2300,9 +2461,8 @@ class TestRunAgentsRunCreation:
         task.run_sandbox = AsyncMock(return_value=success_result)
 
         await task.execute_agent_for_event(
-            event_id="event_123",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 
@@ -2349,9 +2509,8 @@ class TestRunAgentsRunCreation:
         task.run_sandbox = AsyncMock()
 
         await task.execute_agent_for_event(
-            event_id="event_123",
+            event=sample_event_tuple,
             agent=sample_agent,
-            event_tuple=sample_event_tuple,
             interval_start_minutes=1000,
         )
 

@@ -195,6 +195,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="processed_event_prediction_id",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1,
                 interval_start_minutes=10,
@@ -205,6 +206,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unprocessed_event_prediction_id",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1,
                 interval_start_minutes=10,
@@ -308,6 +310,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="discarded_event_prediction_id",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1,
                 interval_start_minutes=10,
@@ -316,6 +319,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="deleted_event_prediction_id",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1,
                 interval_start_minutes=10,
@@ -324,6 +328,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="pending_event_prediction_id",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1,
                 interval_start_minutes=10,
@@ -394,6 +399,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="exported_prediction_event_id",
                 miner_hotkey="neuronHotkey_1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=1,
                 interval_start_minutes=10,
@@ -402,6 +408,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="not_exported_prediction_event_id",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1,
                 interval_start_minutes=10,
@@ -502,6 +509,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="event_id_1",
                 miner_hotkey="neuronHotkey_1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=1,
                 interval_start_minutes=10,
@@ -510,6 +518,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="event_id_2",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1,
                 interval_start_minutes=10,
@@ -518,6 +527,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="event_id_3",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1,
                 interval_start_minutes=10,
@@ -866,8 +876,8 @@ class TestDbOperationsPart1(TestDbOperationsBase):
         # - unique3: cutoff in 2 days, run_days_before_cutoff=2
         # - unique5: cutoff in 3 days, run_days_before_cutoff=3
         assert len(result) == 2
-        assert result[0][1] == event_to_predict_id
-        assert result[1][1] == "event5"
+        assert result[0].event_id == event_to_predict_id
+        assert result[1].event_id == "event5"
 
     async def test_get_predictions_for_event(self, db_operations: DatabaseOperations):
         unique_event_id_1 = "unique_event_id_1"
@@ -908,6 +918,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id=unique_event_id_1,
                 miner_hotkey="neuronHotkey_99",
+                track="MAIN",
                 miner_uid=99,
                 latest_prediction=1,
                 interval_start_minutes=current_interval,
@@ -916,6 +927,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id=unique_event_id_2,
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1,
                 interval_start_minutes=current_interval,
@@ -924,6 +936,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id=unique_event_id_1,
                 miner_hotkey="neuronHotkey_248",
+                track="MAIN",
                 miner_uid=248,
                 latest_prediction=0.5,
                 interval_start_minutes=current_interval,
@@ -932,6 +945,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id=unique_event_id_1,
                 miner_hotkey="neuronHotkey_0",
+                track="MAIN",
                 miner_uid=0,
                 latest_prediction=0.5,
                 interval_start_minutes=current_interval,
@@ -940,6 +954,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id=unique_event_id_1,
                 miner_hotkey="neuronHotkey_0",
+                track="MAIN",
                 miner_uid=0,
                 latest_prediction=0.5,
                 interval_start_minutes=current_interval - 1,
@@ -1034,6 +1049,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_1",
                 miner_hotkey="neuronHotkey_1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=1.0,
                 # interval_start_minutes
@@ -1045,6 +1061,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_2",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1.0,
                 # interval_start_minutes
@@ -1056,6 +1073,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_3",
                 miner_hotkey="neuronHotkey_3",
+                track="MAIN",
                 miner_uid=3,
                 latest_prediction=1.0,
                 # interval_start_minutes
@@ -1067,6 +1085,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_4",
                 miner_hotkey="neuronHotkey_4",
+                track="MAIN",
                 miner_uid=4,
                 latest_prediction=1.0,
                 # interval_start_minutes
@@ -1148,6 +1167,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_1",
                 miner_hotkey="neuronHotkey_1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=1.0,
                 interval_start_minutes=10,
@@ -1156,6 +1176,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_2",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1.0,
                 interval_start_minutes=10,
@@ -1164,6 +1185,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_3",
                 miner_hotkey="neuronHotkey_3",
+                track="MAIN",
                 miner_uid=3,
                 latest_prediction=1.0,
                 interval_start_minutes=10,
@@ -1498,6 +1520,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_1",
                 miner_hotkey="neuronHotkey_1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=float(neuron_1_answer),
                 interval_start_minutes=interval_start_minutes,
@@ -1508,6 +1531,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_2",
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=float(neuron_2_answer),
                 interval_start_minutes=interval_start_minutes,
@@ -1641,6 +1665,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_1",
                 miner_hotkey="neuronHotkey_1",
+                track="MAIN",
                 miner_uid=10,
                 latest_prediction=0.5,
                 interval_start_minutes=5,
@@ -1682,6 +1707,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="test_event_agent",
                 miner_hotkey="agent_hotkey_1",
+                track="MAIN",
                 miner_uid=10,
                 latest_prediction=0.85,
                 interval_start_minutes=50,
@@ -1740,6 +1766,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="test_event_conflict",
                 miner_hotkey="conflict_hotkey",
+                track="MAIN",
                 miner_uid=20,
                 latest_prediction=0.6,
                 interval_start_minutes=100,
@@ -1754,6 +1781,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="test_event_conflict",
                 miner_hotkey="conflict_hotkey",
+                track="MAIN",
                 miner_uid=20,
                 latest_prediction=0.8,
                 interval_start_minutes=100,
@@ -1808,6 +1836,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="test_event_1",
                 miner_hotkey="test_hotkey",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=0.75,
                 interval_start_minutes=100,
@@ -1856,6 +1885,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="test_event_2",
                 miner_hotkey="test_hotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=0.5,
                 interval_start_minutes=100,
@@ -1893,6 +1923,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="test_event_3",
                 miner_hotkey="test_hotkey_3",
+                track="MAIN",
                 miner_uid=3,
                 latest_prediction=0.65,
                 interval_start_minutes=100,
@@ -1908,6 +1939,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             unique_event_id="test_event_3",
             miner_uid=3,
             miner_hotkey="test_hotkey_3",
+            track="MAIN",
         )
 
         assert result is not None
@@ -1926,6 +1958,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             unique_event_id="nonexistent_event",
             miner_uid=999,
             miner_hotkey="nonexistent_hotkey",
+            track="MAIN",
         )
 
         assert result is None
@@ -1949,6 +1982,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="test_event_4",
                 miner_hotkey="test_hotkey_4",
+                track="MAIN",
                 miner_uid=4,
                 latest_prediction=0.60,
                 interval_start_minutes=200,
@@ -1957,6 +1991,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="test_event_4",
                 miner_hotkey="test_hotkey_4",
+                track="MAIN",
                 miner_uid=4,
                 latest_prediction=0.55,
                 interval_start_minutes=100,
@@ -1965,6 +2000,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="test_event_4",
                 miner_hotkey="test_hotkey_4",
+                track="MAIN",
                 miner_uid=4,
                 latest_prediction=0.75,
                 interval_start_minutes=300,
@@ -1977,6 +2013,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             unique_event_id="test_event_4",
             miner_uid=4,
             miner_hotkey="test_hotkey_4",
+            track="MAIN",
         )
 
         assert result is not None
@@ -1985,6 +2022,142 @@ class TestDbOperationsPart1(TestDbOperationsBase):
         assert result.miner_hotkey == "test_hotkey_4"
         assert result.interval_start_minutes == 300
         assert result.latest_prediction == 0.75
+
+    async def test_get_latest_prediction_filters_by_track(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        event = EventsModel(
+            unique_event_id="track_filter_event",
+            event_id="track_filter_event",
+            market_type="test_market",
+            event_type="test",
+            status=EventStatus.PENDING,
+            description="Test track filtering",
+            metadata='{"test": "data"}',
+            cutoff=datetime.now(timezone.utc),
+        )
+        await db_operations.upsert_events([event])
+
+        predictions = [
+            PredictionsModel(
+                unique_event_id="track_filter_event",
+                miner_hotkey="hotkey_track",
+                track="MAIN",
+                miner_uid=10,
+                latest_prediction=0.7,
+                interval_start_minutes=100,
+                interval_agg_prediction=0.7,
+            ),
+            PredictionsModel(
+                unique_event_id="track_filter_event",
+                miner_hotkey="hotkey_track",
+                track="SIGNAL",
+                miner_uid=10,
+                latest_prediction=0.3,
+                interval_start_minutes=100,
+                interval_agg_prediction=0.3,
+            ),
+        ]
+        await db_operations.upsert_predictions(predictions)
+
+        main_result = await db_operations.get_latest_prediction_for_event_and_miner(
+            unique_event_id="track_filter_event",
+            miner_uid=10,
+            miner_hotkey="hotkey_track",
+            track="MAIN",
+        )
+        assert main_result is not None
+        assert main_result.latest_prediction == 0.7
+        assert main_result.track == "MAIN"
+
+        signal_result = await db_operations.get_latest_prediction_for_event_and_miner(
+            unique_event_id="track_filter_event",
+            miner_uid=10,
+            miner_hotkey="hotkey_track",
+            track="SIGNAL",
+        )
+        assert signal_result is not None
+        assert signal_result.latest_prediction == 0.3
+        assert signal_result.track == "SIGNAL"
+        assert signal_result.interval_start_minutes == 100
+
+    async def test_upsert_predictions_separate_per_track(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        event = EventsModel(
+            unique_event_id="track_upsert_event",
+            event_id="track_upsert_event",
+            market_type="test_market",
+            event_type="test",
+            status=EventStatus.PENDING,
+            description="Test track upsert",
+            metadata='{"test": "data"}',
+            cutoff=datetime.now(timezone.utc),
+        )
+        await db_operations.upsert_events([event])
+
+        # Same miner, same event, same interval, different tracks = two rows
+        predictions = [
+            PredictionsModel(
+                unique_event_id="track_upsert_event",
+                miner_hotkey="hotkey_upsert",
+                track="MAIN",
+                miner_uid=20,
+                latest_prediction=0.8,
+                interval_start_minutes=200,
+                interval_agg_prediction=0.8,
+            ),
+            PredictionsModel(
+                unique_event_id="track_upsert_event",
+                miner_hotkey="hotkey_upsert",
+                track="SIGNAL",
+                miner_uid=20,
+                latest_prediction=0.2,
+                interval_start_minutes=200,
+                interval_agg_prediction=0.2,
+            ),
+        ]
+        await db_operations.upsert_predictions(predictions)
+
+        all_preds = await db_operations.get_predictions_for_scoring(
+            unique_event_id="track_upsert_event"
+        )
+        assert len(all_preds) == 2
+
+        tracks = {p.track for p in all_preds}
+        assert tracks == {"MAIN", "SIGNAL"}
+
+    async def test_insert_scores_separate_per_track(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        # Same miner, same event, different tracks = two score rows
+        scores = [
+            ScoresModel(
+                event_id="track_score_event",
+                miner_uid=30,
+                miner_hotkey="hotkey_score",
+                track="MAIN",
+                prediction=0.6,
+                event_score=0.16,
+                spec_version=1,
+            ),
+            ScoresModel(
+                event_id="track_score_event",
+                miner_uid=30,
+                miner_hotkey="hotkey_score",
+                track="SIGNAL",
+                prediction=0.4,
+                event_score=0.36,
+                spec_version=1,
+            ),
+        ]
+        await db_operations.insert_scores(scores)
+
+        result = await db_operations.get_scores_for_export(event_id="track_score_event")
+        assert len(result) == 2
+
+        tracks = {s.track for s in result}
+        assert tracks == {"MAIN", "SIGNAL"}
 
     async def test_get_events_for_scoring(self, db_operations: DatabaseOperations):
         expected_event_id = "event1"
@@ -2062,6 +2235,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id="unique_event_id_1",
                 miner_hotkey="neuronHotkey_1",
+                track="MAIN",
                 miner_uid=1,
                 latest_prediction=1.0,
                 interval_start_minutes=10,
@@ -2070,6 +2244,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
             PredictionsModel(
                 unique_event_id=expected_event_id,
                 miner_hotkey="neuronHotkey_2",
+                track="MAIN",
                 miner_uid=2,
                 latest_prediction=1.0,
                 interval_start_minutes=10,
@@ -2268,6 +2443,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
                         event_id="evt1",
                         miner_uid=1,
                         miner_hotkey="hk1",
+                        track="MAIN",
                         prediction=0.75,
                         event_score=0.85,
                         spec_version=1,
@@ -2276,6 +2452,7 @@ class TestDbOperationsPart1(TestDbOperationsBase):
                         event_id="evt2",
                         miner_uid=2,
                         miner_hotkey="hk2",
+                        track="MAIN",
                         prediction=0.65,
                         event_score=0.80,
                         spec_version=1,

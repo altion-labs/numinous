@@ -15,6 +15,7 @@ import requests.exceptions
 import urllib3.exceptions
 from bittensor_wallet import Wallet
 
+from neurons.validator.models.track import TrackEnum
 from neurons.validator.sandbox.agent_models import AgentOutput, AgentRunnerOutput, RunStatus
 from neurons.validator.sandbox.models import SandboxErrorType, SandboxResult, SandboxState
 from neurons.validator.sandbox.utils.docker import build_docker_image, image_exists
@@ -27,6 +28,7 @@ SANDBOX_NETWORK_NAME = "ig-validator-sandbox-network"
 SANDBOX_SIGNING_PROXY_HOST = "ig_validator_signing_proxy"
 SANDBOX_SIGNING_PROXY_PORT = 8888
 SANDBOX_SIGNING_PROXY_URL = f"http://{SANDBOX_SIGNING_PROXY_HOST}:{SANDBOX_SIGNING_PROXY_PORT}"
+RUN_REGISTRY_PREFIX = "ig_validator_run_registry_"
 
 
 class SandboxManager:
@@ -37,6 +39,7 @@ class SandboxManager:
     signing_proxy_container: Optional[docker.models.containers.Container]
     sandboxes: Dict[str, SandboxState]
     temp_base_dir: Optional[Path]
+    run_registry_dir: Path
 
     def __init__(
         self,
@@ -89,6 +92,11 @@ class SandboxManager:
         # Create isolated network
         self._create_sandbox_network()
 
+        # Create run registry directory for track enforcement
+        self.run_registry_dir = create_temp_dir(
+            prefix=RUN_REGISTRY_PREFIX, base_dir=self.temp_base_dir
+        )
+
         # Start signing proxy
         self.signing_proxy_container = None
         self._create_signing_proxy()
@@ -113,7 +121,19 @@ class SandboxManager:
 
     def close(self) -> None:
         self.cleanup_all_sandboxes()
+        cleanup_temp_dir(self.run_registry_dir)
         self.logger.info("Sandbox Manager closed")
+
+    def register_run(self, run_id: str, track: TrackEnum) -> None:
+        registry_file = self.run_registry_dir / run_id
+        registry_file.write_text(track.value)
+
+    def unregister_run(self, run_id: str) -> None:
+        registry_file = self.run_registry_dir / run_id
+        try:
+            registry_file.unlink(missing_ok=True)
+        except Exception as e:
+            self.logger.debug("Failed to unregister run", extra={"run_id": run_id, "error": str(e)})
 
     def _cleanup_old_containers(self) -> None:
         self.logger.debug("Cleaning up existing sandbox containers")
@@ -239,8 +259,12 @@ class SandboxManager:
                     "VALIDATOR_WALLET_HOTKEY": self.bt_wallet.hotkey_str,
                     "GATEWAY_URL": self.gateway_url,
                     "VALIDATOR_VERSION": __version__,
+                    "RUN_REGISTRY_DIR": "/run_registry",
                 },
-                volumes={str(wallet_path): {"bind": "/wallet", "mode": "ro"}},
+                volumes={
+                    str(wallet_path): {"bind": "/wallet", "mode": "ro"},
+                    str(self.run_registry_dir): {"bind": "/run_registry", "mode": "ro"},
+                },
                 ulimits=[docker.types.Ulimit(name="nofile", soft=65536, hard=65536)],
                 remove=False,
                 detach=True,

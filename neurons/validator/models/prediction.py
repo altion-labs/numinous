@@ -4,6 +4,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, field_validator
 
+from neurons.validator.models.track import TrackEnum
+
 
 class PredictionExportedStatus(IntEnum):
     NOT_EXPORTED = 0
@@ -14,6 +16,7 @@ class PredictionsModel(BaseModel):
     unique_event_id: str
     miner_uid: int
     miner_hotkey: str
+    track: TrackEnum
     latest_prediction: float
     interval_start_minutes: int
     interval_agg_prediction: float
@@ -31,6 +34,7 @@ class PredictionsModel(BaseModel):
             "unique_event_id",
             "miner_uid",
             "miner_hotkey",
+            "track",
             "interval_start_minutes",
         ]
 

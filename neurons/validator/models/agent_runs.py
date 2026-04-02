@@ -4,6 +4,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, field_validator
 
+from neurons.validator.models.track import TrackEnum
+
 
 class AgentRunStatus(str, Enum):
     SUCCESS = "SUCCESS"
@@ -28,6 +30,7 @@ class AgentRunsModel(BaseModel):
     agent_version_id: str
     miner_uid: int
     miner_hotkey: str
+    track: TrackEnum
     status: AgentRunStatus
     exported: Optional[bool] = False
     is_final: Optional[bool] = True

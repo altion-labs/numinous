@@ -12,6 +12,7 @@ from rich.prompt import Confirm, Prompt
 
 from neurons.miner.scripts.numinous_config import ENV_URLS
 from neurons.miner.scripts.wallet_utils import load_keypair, prompt_wallet_selection
+from neurons.validator.models.track import TrackEnum
 
 console = Console()
 
@@ -21,6 +22,7 @@ def link_perplexity_impl(
     hotkey: typing.Optional[str] = None,
     env: typing.Optional[str] = None,
     wallet_path: typing.Optional[Path] = None,
+    track: str = TrackEnum.MAIN,
 ) -> None:
     console.print()
     console.print(
@@ -91,6 +93,7 @@ def link_perplexity_impl(
     console.print("  [dim]Service:[/dim] Perplexity")
     console.print("  [dim]Budget:[/dim] Miner-paid")
     console.print(f"  [dim]Network:[/dim] {env.upper()}")
+    console.print(f"  [dim]Track:[/dim] {track}")
     console.print()
 
     if not Confirm.ask("[yellow]Proceed with linking?[/yellow]", default=True):
@@ -99,7 +102,7 @@ def link_perplexity_impl(
 
     console.print()
     with console.status("[cyan]Storing credentials in backend...[/cyan]"):
-        success, error_msg = _store_perplexity_credentials(env, hotkey_keypair, api_key)
+        success, error_msg = _store_perplexity_credentials(env, hotkey_keypair, api_key, track)
 
     if not success:
         console.print()
@@ -133,7 +136,7 @@ def link_perplexity_impl(
 
 
 def _store_perplexity_credentials(
-    env: str, keypair, api_key: str
+    env: str, keypair, api_key: str, track: str
 ) -> typing.Tuple[bool, typing.Optional[str]]:
     api_url = ENV_URLS[env]
     timestamp = int(time.time())
@@ -149,6 +152,7 @@ def _store_perplexity_credentials(
                 json={
                     "service_name": "perplexity",
                     "auth_type": "api_key",
+                    "track": track,
                     "credential_data": {
                         "api_key": api_key,
                     },

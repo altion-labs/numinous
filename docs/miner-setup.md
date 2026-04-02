@@ -42,6 +42,7 @@ All events are currently 3 days events. The length of the immunity period is 7 d
 - OpenAI: https://platform.openai.com/api-keys
 - Perplexity: https://www.perplexity.ai/settings/api
 - Vericore: https://vericore.ai
+- LunarCrush: https://lunarcrush.com
 - OpenRouter: https://openrouter.ai/settings/keys
 
 **⚠️ OpenAI Security Recommendation:**
@@ -601,7 +602,12 @@ numi test-agent
 
 # Or test specific file
 numi test-agent --agent-file my_agent.py
+
+# Test with a specific track (applies endpoint filtering like production)
+numi test-agent -f my_agent.py -t SIGNAL
 ```
+
+When testing with a non-MAIN track, the local sandbox enforces the same endpoint restrictions as production — your agent will get 403 for any disallowed endpoint.
 
 **Example output:**
 
@@ -657,6 +663,24 @@ The CLI will prompt you for:
 
 ---
 
+# Tracks
+
+A miner can participate in multiple **tracks** simultaneously. Each track is an independent competition — you upload a separate agent per track, and each one is scored and weighted independently against other agents on that same track. Think of it as running multiple miners from a single registration.
+
+
+**Key points:**
+- You can have **one active agent per track** — uploading to a track replaces only that track's agent
+- Each track has its own **scoring pool** — you compete only against other miners on the same track
+- Tracks may have different **sandbox rules** (e.g. which gateway endpoints are accessible)
+- Service credentials linked for the MAIN track **fall back** to all other tracks — you only need track-specific credentials if you want separate API keys
+- If you don't submit an agent for a track, you simply don't participate in it — no penalty
+
+Available tracks are defined in [`neurons/validator/models/track.py`](../neurons/validator/models/track.py). Per-track sandbox rules (endpoint allowlists) are in [`neurons/validator/sandbox/signing_proxy/track_config.py`](../neurons/validator/sandbox/signing_proxy/track_config.py).
+
+When uploading, testing, or linking services, the CLI will prompt you to select a track. You can also pass `--track` explicitly to any command.
+
+---
+
 # Submitting Your Agent
 
 Place your agent in the expected directory:
@@ -669,7 +693,7 @@ cp my_agent.py neurons/miner/agents/
 Submit using the CLI:
 
 ```bash
-# Interactive mode (recommended)
+# Interactive mode (recommended — prompts for track, wallet, etc.)
 numi upload-agent
 
 # Or specify all options
@@ -679,9 +703,12 @@ numi upload-agent \
   --wallet miner \
   --hotkey default \
   --name "My Forecaster v1"
+
+# Upload to a specific track
+numi upload-agent -f my_agent.py -t SIGNAL
 ```
 
-The CLI will guide you through the process - just follow the prompts!
+The CLI will guide you through the process — including track selection — just follow the prompts!
 
 **Upload confirmation:**
 
@@ -697,6 +724,8 @@ Run: numi services link
 ## Linking Services
 
 After uploading your agent, link your API accounts to cover API costs for LLM inference and search.
+
+**Tracks & credentials:** Credentials linked for the MAIN track are used as a fallback for all other tracks. You only need to link track-specific credentials if you want separate API keys per track. Use `--track` to link for a specific track, or the CLI will prompt you.
 
 **Security:** API keys are securely stored using external secret management and never exposed to validators.
 
@@ -772,6 +801,19 @@ You'll be prompted for:
 
 **Important:** Re-link after each agent upload - each code version needs its own link.
 
+### LunarCrush (Social Intelligence)
+
+Link your LunarCrush account for social media sentiment and trend data:
+
+```bash
+numi services link lunar-crush
+```
+
+You'll be prompted for:
+- Your LunarCrush API key (get from https://lunarcrush.com)
+
+**Note:** LunarCrush has no free tier. You must link your account. Subscription-based pricing (500 req/min, 100K req/day).
+
 ### OpenRouter (Multi-Provider LLMs)
 
 Link your OpenRouter account for access to hundreds of LLM models (Claude, Gemini, Llama, etc.):
@@ -809,9 +851,10 @@ numi services link chutes     # Link Chutes API key
 numi services link desearch   # Link Desearch API key
 numi services link openai     # Link OpenAI API key
 numi services link perplexity # Link Perplexity API key
-numi services link vericore    # Link Vericore API key
-numi services link openrouter  # Link OpenRouter API key
-numi services list             # Check linked services
+numi services link vericore   # Link Vericore API key
+numi services link openrouter # Link OpenRouter API key
+numi services list            # Check linked services
+numi services unlink chutes   # Unlink a service
 
 # Local Testing
 numi test-agent            # Test agent with real events

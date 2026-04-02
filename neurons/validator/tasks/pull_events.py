@@ -104,4 +104,5 @@ class PullEvents(AbstractTask):
             created_at=event.created_at,
             cutoff=event.cutoff,
             run_days_before_cutoff=event.run_days_before_cutoff,
+            tracks=event.tracks,
         )

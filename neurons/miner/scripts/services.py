@@ -13,12 +13,16 @@ from rich.table import Table
 
 from neurons.miner.scripts.link_chutes import link_chutes_impl
 from neurons.miner.scripts.link_desearch import link_desearch_impl
+from neurons.miner.scripts.link_lightning_rod import link_lightning_rod_impl
+from neurons.miner.scripts.link_lunar_crush import link_lunar_crush_impl
 from neurons.miner.scripts.link_openai import link_openai_impl
 from neurons.miner.scripts.link_openrouter import link_openrouter_impl
 from neurons.miner.scripts.link_perplexity import link_perplexity_impl
 from neurons.miner.scripts.link_vericore import link_vericore_impl
 from neurons.miner.scripts.numinous_config import ENV_URLS
+from neurons.miner.scripts.track_utils import prompt_track_selection
 from neurons.miner.scripts.wallet_utils import load_keypair, prompt_wallet_selection
+from neurons.validator.models.track import TrackEnum
 
 console = Console()
 
@@ -37,7 +41,9 @@ def services():
       numi services link openrouter   # Link OpenRouter directly
       numi services link perplexity   # Link Perplexity directly
       numi services link vericore     # Link Vericore directly
-      numi services unlink <name>     # Unlink a service
+      numi services link lunar-crush     # Link LunarCrush directly
+      numi services link lightning-rod   # Link Lightning Rod directly
+      numi services unlink <name>        # Unlink a service
 
     \b
     Examples:
@@ -49,6 +55,7 @@ def services():
       numi services link openrouter
       numi services link perplexity
       numi services link vericore
+      numi services link lightning-rod
       numi services unlink chutes
     """
     pass
@@ -134,12 +141,14 @@ def list(
     console.print()
     table = Table(show_header=True, header_style="bold cyan")
     table.add_column("Service", style="green")
+    table.add_column("Track", style="magenta")
     table.add_column("Auth Type", style="cyan")
     table.add_column("Updated", style="dim")
 
     for service in services_list:
         table.add_row(
             service["service_name"],
+            service.get("track", TrackEnum.MAIN.value),
             service["auth_type"],
             service["updated_at"][:19],
         )
@@ -163,12 +172,19 @@ def list(
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
     help="Custom wallet directory path",
 )
+@click.option(
+    "--track",
+    "-t",
+    type=str,
+    help="Track to link credentials for (e.g. MAIN, SIGNAL). Default: MAIN.",
+)
 def link(
     service_name: Optional[str] = None,
     wallet: Optional[str] = None,
     hotkey: Optional[str] = None,
     env: Optional[str] = None,
     wallet_path: Optional[Path] = None,
+    track: Optional[str] = None,
 ) -> None:
     """Link a third-party service to your miner
 
@@ -180,39 +196,62 @@ def link(
       - openrouter: Link OpenRouter API key
       - perplexity: Link Perplexity API key
       - vericore: Link Vericore API key
+      - lunar-crush: Link LunarCrush API key
+      - lightning-rod: Link Lightning Rod API key
 
     \b
     Examples:
-      numi services link                # Interactive mode
-      numi services link desearch       # Link Desearch directly
-      numi services link chutes         # Link Chutes directly
-      numi services link openai         # Link OpenAI directly
-      numi services link openrouter     # Link OpenRouter directly
-      numi services link perplexity     # Link Perplexity directly
-      numi services link vericore       # Link Vericore directly
+      numi services link                  # Interactive mode
+      numi services link desearch         # Link Desearch directly
+      numi services link chutes           # Link Chutes directly
+      numi services link openai           # Link OpenAI directly
+      numi services link openrouter       # Link OpenRouter directly
+      numi services link perplexity       # Link Perplexity directly
+      numi services link vericore         # Link Vericore directly
+      numi services link lunar-crush      # Link LunarCrush directly
+      numi services link lightning-rod    # Link Lightning Rod directly
+      numi services link chutes -t SIGNAL # Link for SIGNAL track
     """
     if not service_name:
         console.print()
         service_choice = Prompt.ask(
             "[bold cyan]Select service to link[/bold cyan]",
-            choices=["desearch", "chutes", "openai", "openrouter", "perplexity", "vericore"],
+            choices=[
+                "desearch",
+                "chutes",
+                "openai",
+                "openrouter",
+                "perplexity",
+                "vericore",
+                "lunar-crush",
+                "lightning-rod",
+            ],
             default="desearch",
         )
         service_name = service_choice.lower()
         console.print()
 
+    if not track:
+        track = prompt_track_selection(show_allowlist=False, show_credential_fallback=True)
+    else:
+        track = track.upper()
+
     if service_name == "desearch":
-        link_desearch_impl(wallet, hotkey, env, wallet_path)
+        link_desearch_impl(wallet, hotkey, env, wallet_path, track)
     elif service_name == "chutes":
-        link_chutes_impl(wallet, hotkey, env, wallet_path)
+        link_chutes_impl(wallet, hotkey, env, wallet_path, track)
     elif service_name == "openai":
-        link_openai_impl(wallet, hotkey, env, wallet_path)
+        link_openai_impl(wallet, hotkey, env, wallet_path, track)
     elif service_name == "openrouter":
-        link_openrouter_impl(wallet, hotkey, env, wallet_path)
+        link_openrouter_impl(wallet, hotkey, env, wallet_path, track)
     elif service_name == "perplexity":
-        link_perplexity_impl(wallet, hotkey, env, wallet_path)
+        link_perplexity_impl(wallet, hotkey, env, wallet_path, track)
     elif service_name == "vericore":
-        link_vericore_impl(wallet, hotkey, env, wallet_path)
+        link_vericore_impl(wallet, hotkey, env, wallet_path, track)
+    elif service_name == "lunar-crush":
+        link_lunar_crush_impl(wallet, hotkey, env, wallet_path, track)
+    elif service_name == "lightning-rod":
+        link_lightning_rod_impl(wallet, hotkey, env, wallet_path, track)
     else:
         console.print(f"[red]✗ Unknown service:[/red] {service_name}")
         raise click.Abort()
@@ -233,18 +272,26 @@ def link(
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
     help="Custom wallet directory path",
 )
+@click.option(
+    "--track",
+    "-t",
+    type=str,
+    help="Track to unlink credentials for (e.g. MAIN, SIGNAL). Default: MAIN.",
+)
 def unlink(
     service_name: str,
     wallet: Optional[str] = None,
     hotkey: Optional[str] = None,
     env: Optional[str] = None,
     wallet_path: Optional[Path] = None,
+    track: Optional[str] = None,
 ) -> None:
     """Unlink a service from your miner
 
     \b
     Examples:
       numi services unlink desearch
+      numi services unlink chutes -t SIGNAL
     """
     console.print()
     console.print(
@@ -285,9 +332,14 @@ def unlink(
 
     console.print(f"[green]✓[/green] Loaded wallet: [yellow]{keypair.ss58_address}[/yellow]")
 
+    if not track:
+        track = prompt_track_selection(show_allowlist=False)
+    else:
+        track = track.upper()
+
     console.print()
-    with console.status(f"[cyan]Unlinking {service_name}...[/cyan]"):
-        success = _unlink_service(env, keypair, service_name)
+    with console.status(f"[cyan]Unlinking {service_name} (track: {track})...[/cyan]"):
+        success = _unlink_service(env, keypair, service_name, track)
 
     if not success:
         console.print()
@@ -340,7 +392,7 @@ def _fetch_linked_services(env: str, keypair) -> Optional[typing.List[dict]]:
         return None
 
 
-def _unlink_service(env: str, keypair, service_name: str) -> bool:
+def _unlink_service(env: str, keypair, service_name: str, track: str) -> bool:
     api_url = ENV_URLS[env]
     timestamp = int(time.time())
     payload = f"{keypair.ss58_address}:{timestamp}"
@@ -352,6 +404,7 @@ def _unlink_service(env: str, keypair, service_name: str) -> bool:
         with httpx.Client(timeout=30.0) as client:
             response = client.delete(
                 f"{api_url}/api/v3/miner/services/{service_name}",
+                params={"track": track},
                 headers={
                     "Authorization": f"Bearer {signature_base64}",
                     "Miner-Public-Key": public_key_hex,

@@ -12,6 +12,7 @@ class TestScoresModel:
             event_id="evt001",
             miner_uid=1,
             miner_hotkey="hk1",
+            track="MAIN",
             prediction=0.75,
             event_score=0.85,
             spec_version=1,
@@ -31,6 +32,7 @@ class TestScoresModel:
             event_id="evt002",
             miner_uid=2,
             miner_hotkey="hk2",
+            track="MAIN",
             prediction=0.95,
             event_score=0.90,
             created_at=dt,
@@ -58,6 +60,7 @@ class TestScoresModel:
             event_id="evt004",
             miner_uid=4,
             miner_hotkey="hk4",
+            track="MAIN",
             prediction=0.70,
             event_score=0.75,
             spec_version=1,
@@ -70,6 +73,7 @@ class TestScoresModel:
             event_id="evt005",
             miner_uid=5,
             miner_hotkey="hk5",
+            track="MAIN",
             prediction=0.85,
             event_score=0.80,
             spec_version=1,
@@ -84,6 +88,7 @@ class TestScoresModel:
                 event_id=123,  # not a string
                 miner_uid=7,
                 miner_hotkey="hk7",
+                track="MAIN",
                 prediction=0.85,
                 event_score=0.80,
                 spec_version=1,
@@ -94,6 +99,7 @@ class TestScoresModel:
                 event_id="evt006",
                 miner_uid="not-an-int",
                 miner_hotkey="hk8",
+                track="MAIN",
                 prediction=0.75,
                 event_score=0.70,
                 spec_version=1,
@@ -104,6 +110,7 @@ class TestScoresModel:
                 event_id="evt007",
                 miner_uid=8,
                 miner_hotkey="hk9",
+                track="MAIN",
                 prediction="not-a-float",
                 event_score=0.65,
                 spec_version=1,
@@ -114,9 +121,10 @@ class TestScoresModel:
             event_id="evt008",
             miner_uid=9,
             miner_hotkey="hk10",
+            track="MAIN",
             prediction=0.55,
             event_score=0.60,
             spec_version=1,
         )
         # Expected primary key based on the ScoresModel definition.
-        assert model.primary_key == ["event_id", "miner_uid", "miner_hotkey"]
+        assert model.primary_key == ["event_id", "miner_uid", "miner_hotkey", "track"]

@@ -1,8 +1,11 @@
+import json
 from datetime import datetime
 from enum import IntEnum
 from typing import Any, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_serializer, field_validator
+
+from neurons.validator.models.track import TrackEnum
 
 
 class EventStatus(IntEnum):
@@ -38,6 +41,7 @@ class EventsModel(BaseModel):
     event_type: Optional[str] = None
     deleted_at: Optional[datetime] = None
     forecasts: Optional[str] = "{}"
+    tracks: list[TrackEnum] = [TrackEnum.MAIN]
 
     @property
     def primary_key(self):
@@ -69,6 +73,16 @@ class EventsModel(BaseModel):
             return EventStatus(int(v))
         except (ValueError, TypeError):
             raise ValueError(f"Invalid status: {v}")
+
+    @field_validator("tracks", mode="before")
+    def parse_tracks(cls, v: Any) -> list[TrackEnum]:
+        if isinstance(v, str):
+            return [TrackEnum(t) for t in json.loads(v)]
+        return v
+
+    @field_serializer("tracks")
+    def serialize_tracks(self, v: list[TrackEnum]) -> str:
+        return json.dumps([t.value for t in v])
 
 
 EVENTS_FIELDS = EventsModel.model_fields.keys()

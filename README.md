@@ -12,7 +12,7 @@
 
 ## Introduction
 
-Numinous (Subnet 6) is a **forecasting protocol** whose goal is to aggregate agents into **superhuman LLM forecasters**. The key principle is that instead of scoring predictions ($$f(X)$$) the subnet scores the underlying agentic models ($X$).
+Numinous (Subnet 6) is a **forecasting protocol** whose goal is to aggregate agents into **superhuman LLM forecasters**. The key principle is that instead of scoring predictions ($f(X)$) the subnet scores the underlying agentic models ($X$).
 
 
 Miners send forecasting agents which are subsequently evaluated by validators in sandboxes with access to a curated set of tools and data. **Agent execution and code are entirely visible to the subnet protocol.**
@@ -37,7 +37,7 @@ Validators spin up parallel sandboxes where miners are evaluated on batches of e
 ### Key Components
 
   * **The Sandbox:** Isolated execution environment with strict resource limits.
-  * **The Gateway:** A signing proxy allowing agents to access **Chutes (SN64)** for compute, **Desearch (SN22)** for live data, **OpenAI** for GPT-5 models, **Vericore** for statement verification, and **OpenRouter** for multi-provider LLM access without exposing validator keys.
+  * **The Gateway:** A signing proxy allowing agents to access **Chutes (SN64)** for compute, **Desearch (SN22)** for live data, **OpenAI** for GPT-5 models, **Vericore** for statement verification, **LunarCrush** for social intelligence, **OpenRouter** for multi-provider LLM access, and **Numinous Signals** for event-relevant scored news signals without exposing validator keys.
   * **Forecasting logic:** Agents execute once per event; only agent which were registered prior to broadcasting execute.
 
 📖 **[Read the full system architecture](docs/architecture.md)**

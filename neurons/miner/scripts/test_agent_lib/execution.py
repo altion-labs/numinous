@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 from rich.prompt import Prompt
 
+from neurons.validator.models.track import TrackEnum
 from neurons.validator.sandbox import SandboxManager
 from neurons.validator.utils.logger.logger import NuminousLogger
 
@@ -47,11 +48,13 @@ def prompt_wallet_selection() -> tuple[str, str]:
     return wallet_prompt()
 
 
-def run_tests(agent_path: Path, events: list[dict]) -> dict:
-    return asyncio.run(run_tests_async(agent_path, events))
+def run_tests(agent_path: Path, events: list[dict], track: TrackEnum = TrackEnum.MAIN) -> dict:
+    return asyncio.run(run_tests_async(agent_path, events, track))
 
 
-async def run_tests_async(agent_path: Path, events: list[dict]) -> dict:
+async def run_tests_async(
+    agent_path: Path, events: list[dict], track: TrackEnum = TrackEnum.MAIN
+) -> dict:
     console.print()
     console.print("[cyan]🚀 Initializing sandbox environment...[/cyan]")
     console.print()
@@ -96,6 +99,7 @@ async def run_tests_async(agent_path: Path, events: list[dict]) -> dict:
 
     console.print("[cyan]Test Configuration:[/cyan]")
     console.print(f"  • Agent: [yellow]{agent_path.name}[/yellow]")
+    console.print(f"  • Track: [yellow]{track.value}[/yellow]")
     console.print(f"  • Events: [yellow]{len(events)}[/yellow]")
     console.print()
 
@@ -121,6 +125,7 @@ async def run_tests_async(agent_path: Path, events: list[dict]) -> dict:
         agent_name=agent_path.name,
         events=events,
         max_concurrent=max_concurrent,
+        track=track,
     )
 
     console.print()
@@ -138,6 +143,7 @@ async def run_all_tests(
     agent_name: str,
     events: list[dict],
     max_concurrent: int,
+    track: TrackEnum = TrackEnum.MAIN,
 ) -> dict:
     results = {
         "agent": agent_name,
@@ -167,6 +173,7 @@ async def run_all_tests(
                 event=event,
                 progress=progress,
                 progress_task=task,
+                track=track,
             )
             tasks.append(test_task)
 
@@ -201,9 +208,11 @@ async def run_single_test(
     event: dict,
     progress: Progress,
     progress_task,
+    track: TrackEnum = TrackEnum.MAIN,
 ) -> dict:
     async with semaphore:
         run_id = str(uuid.uuid4())
+        sandbox_manager.register_run(run_id, track)
         start_time = time.time()
 
         event_data = {
@@ -255,6 +264,8 @@ async def run_single_test(
                 "error": f"Execution error: {str(e)}",
                 "traceback": "",
             }
+
+        sandbox_manager.unregister_run(run_id)
 
         end_time = time.time()
         duration = end_time - start_time

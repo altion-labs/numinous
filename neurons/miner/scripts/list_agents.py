@@ -14,6 +14,7 @@ from rich.table import Table
 
 from neurons.miner.scripts.numinous_config import ENV_URLS
 from neurons.miner.scripts.wallet_utils import load_keypair, prompt_wallet_selection
+from neurons.validator.models.track import TrackEnum
 
 console = Console()
 
@@ -121,8 +122,8 @@ def list_agents(
 
     console.print(f"[green]✓[/green] Loaded wallet: [yellow]{keypair.ss58_address}[/yellow]")
 
-    # Track the globally active agent ID (determined on first page)
-    global_active_agent_id = None
+    # Track active agent IDs — one per track (determined on first page)
+    active_agent_ids: set[str] = set()
     now = datetime.now(timezone.utc)
 
     while True:
@@ -180,8 +181,12 @@ def list_agents(
 
                 agents.sort(key=lambda x: x.get("version_number", 0), reverse=True)
 
-                if global_active_agent_id is None and offset == 0:
+                if not active_agent_ids and offset == 0:
+                    seen_tracks: set[str] = set()
                     for agent in agents:
+                        agent_track = agent.get("track", TrackEnum.MAIN.value)
+                        if agent_track in seen_tracks:
+                            continue
                         activated_at_str = agent.get("activated_at")
                         if activated_at_str:
                             try:
@@ -189,8 +194,8 @@ def list_agents(
                                     activated_at_str.replace("Z", "+00:00")
                                 )
                                 if activated_at <= now:
-                                    global_active_agent_id = agent.get("version_id")
-                                    break
+                                    active_agent_ids.add(agent.get("version_id"))
+                                    seen_tracks.add(agent_track)
                             except (ValueError, TypeError):
                                 continue
 
@@ -204,6 +209,7 @@ def list_agents(
 
                 table.add_column("Version", justify="right", style="cyan")
                 table.add_column("Name", style="white")
+                table.add_column("Track", style="magenta")
                 table.add_column("Status", justify="center")
                 table.add_column("Created At", style="dim")
                 table.add_column("Activated At", style="dim")
@@ -236,15 +242,23 @@ def list_agents(
                             pass
 
                     status = ""
-                    if version_id == global_active_agent_id:
+                    if version_id in active_agent_ids:
                         status = "[bold green]ACTIVE[/bold green]"
                     elif is_active_time:
                         status = "[yellow]Old[/yellow]"
                     else:
                         status = "[blue]Pending[/blue]"
 
+                    agent_track = agent.get("track", TrackEnum.MAIN.value)
+
                     table.add_row(
-                        version, name, status, created_at, activated_at_display, version_id
+                        version,
+                        name,
+                        agent_track,
+                        status,
+                        created_at,
+                        activated_at_display,
+                        version_id,
                     )
 
                 console.print(table)

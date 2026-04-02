@@ -12,6 +12,7 @@ from rich.prompt import Confirm, Prompt
 
 from neurons.miner.scripts.numinous_config import ENV_URLS
 from neurons.miner.scripts.wallet_utils import load_coldkey, load_keypair, prompt_wallet_selection
+from neurons.validator.models.track import TrackEnum
 
 console = Console()
 
@@ -23,6 +24,7 @@ def link_desearch_impl(
     hotkey: typing.Optional[str] = None,
     env: typing.Optional[str] = None,
     wallet_path: typing.Optional[Path] = None,
+    track: str = TrackEnum.MAIN,
 ) -> None:
     """Link your Desearch account to your miner
 
@@ -84,16 +86,16 @@ def link_desearch_impl(
     console.print(f"[green]✓[/green] Loaded hotkey: [yellow]{hotkey_keypair.ss58_address}[/yellow]")
 
     console.print()
-    with console.status("[cyan]Checking for uploaded agent code...[/cyan]"):
-        latest_agent = _fetch_latest_agent(env, hotkey_keypair)
+    with console.status(f"[cyan]Checking for uploaded agent code (track: {track})...[/cyan]"):
+        latest_agent = _fetch_latest_agent_for_track(env, hotkey_keypair, track)
 
     if not latest_agent:
         console.print()
         console.print(
             Panel.fit(
-                "[red]✗ No agent code found[/red]\n\n"
-                "[yellow]You must upload agent code first:[/yellow]\n"
-                "[cyan]numi upload-agent[/cyan]",
+                f"[red]✗ No agent code found for track {track}[/red]\n\n"
+                "[yellow]You must upload agent code for this track first:[/yellow]\n"
+                f"[cyan]numi upload-agent --track {track}[/cyan]",
                 border_style="red",
             )
         )
@@ -155,6 +157,7 @@ def link_desearch_impl(
     console.print(f"  [dim]Version ID:[/dim] {version_id}")
     console.print(f"  [dim]Agent:[/dim] {agent_name}")
     console.print(f"  [dim]Network:[/dim] {env.upper()}")
+    console.print(f"  [dim]Track:[/dim] {track}")
     console.print()
 
     if not Confirm.ask("[yellow]Proceed with linking?[/yellow]", default=True):
@@ -189,6 +192,7 @@ def link_desearch_impl(
             coldkey_keypair.ss58_address,
             version_id,
             version_signature_hex,
+            track,
         )
 
     if not backend_success:
@@ -218,7 +222,7 @@ def link_desearch_impl(
     console.print()
 
 
-def _fetch_latest_agent(env: str, keypair) -> typing.Optional[dict]:
+def _fetch_latest_agent_for_track(env: str, keypair, track: str) -> typing.Optional[dict]:
     api_url = ENV_URLS[env]
     timestamp = int(time.time())
     payload = f"{keypair.ss58_address}:{timestamp}"
@@ -230,7 +234,7 @@ def _fetch_latest_agent(env: str, keypair) -> typing.Optional[dict]:
         with httpx.Client(timeout=30.0) as client:
             response = client.get(
                 f"{api_url}/api/v3/miner/agents",
-                params={"limit": 1, "offset": 0},
+                params={"limit": 100, "offset": 0},
                 headers={
                     "Authorization": f"Bearer {signature_base64}",
                     "Miner-Public-Key": public_key_hex,
@@ -242,8 +246,9 @@ def _fetch_latest_agent(env: str, keypair) -> typing.Optional[dict]:
         if response.status_code == 200:
             result = response.json()
             agents = result.get("items", [])
-            if agents:
-                return agents[0]
+            for agent in agents:
+                if agent.get("track", TrackEnum.MAIN.value) == track:
+                    return agent
         return None
     except Exception:
         return None
@@ -266,7 +271,7 @@ def _link_to_desearch(api_key: str, coldkey_ss58: str, signature_hex: str) -> bo
 
 
 def _store_backend_credentials(
-    env: str, keypair, coldkey: str, code_hash: str, code_signature_hex: str
+    env: str, keypair, coldkey: str, code_hash: str, code_signature_hex: str, track: str
 ) -> bool:
     api_url = ENV_URLS[env]
     timestamp = int(time.time())
@@ -282,6 +287,7 @@ def _store_backend_credentials(
                 json={
                     "service_name": "desearch",
                     "auth_type": "signature",
+                    "track": track,
                     "credential_data": {
                         "coldkey": coldkey,
                         "code_hash": code_hash,
