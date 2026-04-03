@@ -1,4 +1,5 @@
 import copy
+import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -326,17 +327,31 @@ class Scoring(AbstractTask):
         failed_miners = {(run.miner_uid, run.miner_hotkey) for run in failed_runs}
         failed_miner_track = {(run.miner_uid, run.miner_hotkey): run.track for run in failed_runs}
 
+        miners_with_predictions = set(
+            zip(
+                interval_scores_df.loc[
+                    interval_scores_df[ScoreNames.interval_agg_prediction].notna(),
+                    ScoreNames.miner_uid,
+                ],
+                interval_scores_df.loc[
+                    interval_scores_df[ScoreNames.interval_agg_prediction].notna(),
+                    ScoreNames.miner_hotkey,
+                ],
+            )
+        )
+
         missing_predictions = interval_scores_df[ScoreNames.interval_agg_prediction].isnull()
         has_failed_run = interval_scores_df.apply(
-            lambda row: (
-                row[ScoreNames.miner_uid],
-                row[ScoreNames.miner_hotkey],
-            )
-            in failed_miners,
+            lambda row: (row[ScoreNames.miner_uid], row[ScoreNames.miner_hotkey]) in failed_miners,
+            axis=1,
+        )
+        has_real_predictions = interval_scores_df.apply(
+            lambda row: (row[ScoreNames.miner_uid], row[ScoreNames.miner_hotkey])
+            in miners_with_predictions,
             axis=1,
         )
 
-        should_impute = missing_predictions & has_failed_run
+        should_impute = missing_predictions & has_failed_run & ~has_real_predictions
         interval_scores_df.loc[
             should_impute, ScoreNames.interval_agg_prediction
         ] = imputed_prediction
@@ -374,6 +389,7 @@ class Scoring(AbstractTask):
             )
             .reset_index()
         )
+        scores_df = scores_df[scores_df[ScoreNames.weight_sum] > 0]
         scores_df[ScoreNames.rema_prediction] = (
             scores_df[ScoreNames.weighted_prediction_sum] / scores_df[ScoreNames.weight_sum]
         )
@@ -453,10 +469,17 @@ class Scoring(AbstractTask):
 
     async def export_scores_to_db(self, scores_df: pd.DataFrame, event_id: str):
         sanitized_scores = scores_df.copy()
+
+        for col in [ScoreNames.rema_prediction, ScoreNames.rema_peer_score]:
+            if col in sanitized_scores.columns and isinstance(
+                sanitized_scores[col].dtype, pd.Float64Dtype
+            ):
+                sanitized_scores[col] = sanitized_scores[col].astype("float64")
+
         fill_values = {
-            ScoreNames.miner_uid: -1,  # should not happen
-            ScoreNames.miner_hotkey: "unknown",  # should not happen
-            ScoreNames.rema_prediction: -998,  # marker for missing predictions
+            ScoreNames.miner_uid: -1,
+            ScoreNames.miner_hotkey: "unknown",
+            ScoreNames.rema_prediction: -998,
             ScoreNames.rema_peer_score: 0.0,
         }
         sanitized_scores.fillna(value=fill_values, inplace=True)
@@ -464,13 +487,21 @@ class Scoring(AbstractTask):
         records = sanitized_scores.to_dict(orient="records")
         scores = []
         for record in records:
+            prediction = record[ScoreNames.rema_prediction]
+            if isinstance(prediction, float) and math.isnan(prediction):
+                self.errors_count += 1
+                self.logger.error(
+                    "Skipping score with NaN prediction.",
+                    extra={"event_id": event_id, "miner_uid": record[ScoreNames.miner_uid]},
+                )
+                continue
             try:
                 score = ScoresModel(
                     event_id=event_id,
                     miner_uid=record[ScoreNames.miner_uid],
                     miner_hotkey=record[ScoreNames.miner_hotkey],
                     track=record[ScoreNames.track],
-                    prediction=record[ScoreNames.rema_prediction],
+                    prediction=prediction,
                     event_score=record[ScoreNames.rema_peer_score],
                     spec_version=self.spec_version,
                 )
@@ -488,6 +519,52 @@ class Scoring(AbstractTask):
             return
 
         await self.db_operations.insert_scores(scores)
+
+    async def _score_single_event(self, input_event: EventsModel):
+        unique_event_id = input_event.unique_event_id
+        event_id = input_event.event_id
+        event = self.set_right_cutoff(input_event)
+        self.logger.debug(
+            "Calculating scores for an event.",
+            extra={
+                "event_id": event_id,
+                "event_registered_date": event.registered_date.isoformat(),
+                "event_cutoff": event.cutoff.isoformat(),
+                "event_resolved_at": event.resolved_at.isoformat(),
+            },
+        )
+
+        predictions = await self.db_operations.get_predictions_for_scoring(
+            unique_event_id=unique_event_id
+        )
+        if not predictions:
+            self.errors_count += 1
+            self.logger.error(
+                "There are no predictions for a settled event - discarding.",
+                extra={"event_id": event_id},
+            )
+            await self.db_operations.mark_event_as_discarded(unique_event_id=unique_event_id)
+            return
+
+        scores_df = await self.score_event(event, predictions)
+        if scores_df.empty:
+            self.logger.error(
+                "Scores could not be calculated for an event.",
+                extra={"event_id": event_id},
+            )
+            return
+
+        self.logger.debug(
+            "Scores calculated, sample below.",
+            extra={
+                "event_id": event_id,
+                "scores": scores_df.head(n=5).to_dict(orient="index"),
+                "len_scores": len(scores_df),
+            },
+        )
+
+        await self.export_scores_to_db(scores_df, event_id)
+        await self.db_operations.mark_event_as_processed(unique_event_id=unique_event_id)
 
     async def run(self):
         async with self.subtensor_cm as subtensor:
@@ -511,52 +588,15 @@ class Scoring(AbstractTask):
             )
 
             for event in events_to_score:
-                unique_event_id = event.unique_event_id
                 event_id = event.event_id
-                event = self.set_right_cutoff(event)
-                self.logger.debug(
-                    "Calculating scores for an event.",
-                    extra={
-                        "event_id": event_id,
-                        "event_registered_date": event.registered_date.isoformat(),
-                        "event_cutoff": event.cutoff.isoformat(),
-                        "event_resolved_at": event.resolved_at.isoformat(),
-                    },
-                )
-
-                predictions = await self.db_operations.get_predictions_for_scoring(
-                    unique_event_id=unique_event_id
-                )
-                if not predictions:
+                try:
+                    await self._score_single_event(event)
+                except Exception as exc:
                     self.errors_count += 1
-                    self.logger.error(
-                        "There are no predictions for a settled event - discarding.",
-                        extra={"event_id": event_id},
+                    self.logger.exception(
+                        "Failed to score event, skipping.",
+                        extra={"event_id": event_id, "error": str(exc)},
                     )
-                    await self.db_operations.mark_event_as_discarded(
-                        unique_event_id=unique_event_id
-                    )
-                    continue
-
-                scores_df = await self.score_event(event, predictions)
-                if scores_df.empty:
-                    self.logger.error(
-                        "Scores could not be calculated for an event.",
-                        extra={"event_id": event_id},
-                    )
-                    continue
-                else:
-                    self.logger.debug(
-                        "Scores calculated, sample below.",
-                        extra={
-                            "event_id": event_id,
-                            "scores": scores_df.head(n=5).to_dict(orient="index"),
-                            "len_scores": len(scores_df),
-                        },
-                    )
-
-                await self.export_scores_to_db(scores_df, event_id)
-                await self.db_operations.mark_event_as_processed(unique_event_id=unique_event_id)
 
         self.logger.debug(
             "Scoring run finished. Resetting errors count.",
