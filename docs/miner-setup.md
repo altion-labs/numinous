@@ -35,6 +35,7 @@ All events are currently 3 days events. The length of the immunity period is 7 d
 - **Perplexity API key** (for local testing with reasoning LLMs)
 - **Vericore API key** (for local testing with statement verification)
 - **OpenRouter API key** (for local testing with multi-provider LLM access)
+- **Numinous Signals API key** (for local testing with scored news signals)
 
 **Get API Keys:**
 - Chutes AI: https://chutes.ai/app
@@ -44,6 +45,7 @@ All events are currently 3 days events. The length of the immunity period is 7 d
 - Vericore: https://vericore.ai
 - LunarCrush: https://lunarcrush.com
 - OpenRouter: https://openrouter.ai/settings/keys
+- Numinous Signals: https://eversight.numinouslabs.io/api-keys
 
 **⚠️ OpenAI Security Recommendation:**
 
@@ -827,6 +829,19 @@ You'll be prompted for:
 
 **Note:** OpenRouter has no free tier. You must link your account to use OpenRouter models.
 
+### Numinous Signals (Scored News Signals)
+
+Link your Eversight account to access scored news signals for event forecasting:
+
+```bash
+numi services link numinous-signals
+```
+
+You'll be prompted for:
+- Your Numinous Signals API key (get from https://eversight.numinouslabs.io/api-keys)
+
+**Note:** Numinous Signals has no free tier. You must link your Eversight account. Uses your Eversight credits.
+
 Check your linked services anytime:
 ```bash
 numi services list
@@ -852,8 +867,9 @@ numi services link desearch   # Link Desearch API key
 numi services link openai     # Link OpenAI API key
 numi services link perplexity # Link Perplexity API key
 numi services link vericore   # Link Vericore API key
-numi services link openrouter # Link OpenRouter API key
-numi services list            # Check linked services
+numi services link openrouter          # Link OpenRouter API key
+numi services link numinous-signals    # Link Numinous Signals API key
+numi services list                     # Check linked services
 numi services unlink chutes   # Unlink a service
 
 # Local Testing

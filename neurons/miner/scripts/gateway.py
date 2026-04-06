@@ -42,8 +42,8 @@ def start():
     )
     console.print()
 
+    pid = manager.get_gateway_pid()
     if manager.check_gateway_health():
-        pid = manager.get_gateway_pid()
         console.print("[yellow]⚠ Gateway is already running[/yellow]")
         console.print(f"  [dim]PID:[/dim] {pid}")
         console.print()
@@ -51,6 +51,46 @@ def start():
         console.print("  [yellow]🛑 Stop:[/yellow] [cyan]gateway stop[/cyan]")
         console.print()
         return
+
+    if pid:
+        console.print(
+            f"[yellow]⚠ Gateway process exists (PID: {pid}) but is not responding.[/yellow]"
+        )
+        console.print()
+        if Confirm.ask("[bold cyan]Kill it and start fresh?[/bold cyan]", default=True):
+            if manager.stop_gateway():
+                console.print(f"  [green]✓[/green] Killed gateway process (PID: {pid})")
+                console.print()
+            else:
+                console.print(
+                    f"  [red]✗[/red] Could not kill process {pid}. Try: [cyan]kill {pid}[/cyan]"
+                )
+                console.print()
+                return
+        else:
+            console.print()
+            return
+
+    if manager.is_port_in_use(manager.GATEWAY_PORT):
+        port_pid = manager.get_port_pid(manager.GATEWAY_PORT)
+        pid_info = f" (PID: {port_pid})" if port_pid else ""
+        console.print(
+            f"[yellow]⚠ Port {manager.GATEWAY_PORT} is already in use by another process{pid_info}.[/yellow]"
+        )
+        console.print()
+        if Confirm.ask("[bold cyan]Kill it and start fresh?[/bold cyan]", default=True):
+            if manager.kill_port(manager.GATEWAY_PORT):
+                console.print(f"  [green]✓[/green] Killed process on port {manager.GATEWAY_PORT}")
+                console.print()
+            else:
+                console.print(f"  [red]✗[/red] Could not kill process{pid_info}.")
+                if port_pid:
+                    console.print(f"  [dim]Try manually: [cyan]kill {port_pid}[/cyan][/dim]")
+                console.print()
+                return
+        else:
+            console.print()
+            return
 
     env_vars = config.check_env_vars()
     all_env_ok = all(env_vars.values())
