@@ -22,7 +22,6 @@ from neurons.validator.models.prediction import (
     PredictionExportedStatus,
     PredictionsModel,
 )
-from neurons.validator.models.reasoning import REASONING_FIELDS, ReasoningModel
 from neurons.validator.models.score import SCORE_FIELDS, ScoresExportedStatus, ScoresModel
 from neurons.validator.utils.logger.logger import NuminousLogger
 
@@ -204,53 +203,6 @@ class DatabaseOperations:
                 ScoresExportedStatus.EXPORTED,
                 EventStatus.DISCARDED,
                 ScoresExportedStatus.EXPORTED,
-                EventStatus.DELETED,
-                batch_size,
-            ],
-        )
-
-    async def delete_reasonings(self, batch_size: int) -> Iterable[tuple[int]]:
-        return await self.__db_client.delete(
-            """
-                WITH reasonings_to_delete AS (
-                    SELECT
-                        r.ROWID
-                    FROM
-                        reasoning r
-                    LEFT JOIN
-                        events e ON r.event_id = e.event_id
-                    WHERE
-                        -- Orphan reasonings
-                        e.event_id IS NULL
-
-                        -- Reasonings for resolved events older than 7 days
-                        OR (
-                            e.processed = TRUE
-                            AND datetime(e.resolved_at) < datetime(CURRENT_TIMESTAMP, '-7 day')
-                        )
-
-                        -- Reasonings for discarded or deleted events
-                        OR (
-                            e.status IN (?, ?)
-                        )
-                    ORDER BY
-                        r.ROWID ASC
-                    LIMIT ?
-                )
-                DELETE FROM
-                    reasoning
-                WHERE
-                    ROWID IN (
-                        SELECT
-                            ROWID
-                        FROM
-                            reasonings_to_delete
-                    )
-                RETURNING
-                    ROWID
-            """,
-            [
-                EventStatus.DISCARDED,
                 EventStatus.DELETED,
                 batch_size,
             ],
@@ -589,37 +541,17 @@ class DatabaseOperations:
             parameters=event_tuples,
         )
 
-    async def upsert_reasonings(self, reasonings: list[ReasoningModel]) -> None:
-        """Upsert a list of ReasoningModel objects into the database"""
-
-        fields_to_insert = [
-            field_name
-            for field_name in REASONING_FIELDS
-            if field_name not in ("created_at", "updated_at")
-        ]
-        placeholders = ", ".join(["?"] * len(fields_to_insert))
-        columns = ", ".join(fields_to_insert)
-
-        # Convert each reasoning into a tuple of values in the same order as fields_to_insert
-        reasoning_tuples = [
-            tuple(getattr(reasoning, field_name) for field_name in fields_to_insert)
-            for reasoning in reasonings
-        ]
-
-        sql = f"""
-                INSERT INTO reasoning
-                    ({columns}, created_at, updated_at)
-                VALUES
-                    ({placeholders}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                ON CONFLICT
-                    (event_id, miner_uid, miner_hotkey)
+    async def insert_reasoning(self, run_id: str, reasoning: str) -> None:
+        await self.__db_client.insert_many(
+            """
+                INSERT INTO reasoning (run_id, reasoning, exported)
+                VALUES (?, ?, ?)
+                ON CONFLICT (run_id)
                 DO UPDATE SET
                     reasoning = excluded.reasoning,
                     updated_at = CURRENT_TIMESTAMP
-        """
-        return await self.__db_client.insert_many(
-            sql=sql,
-            parameters=reasoning_tuples,
+            """,
+            [(run_id, reasoning, False)],
         )
 
     async def get_events_for_scoring(self, max_events=1000) -> list[EventsModel]:

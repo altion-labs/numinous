@@ -69,16 +69,6 @@ class DbCleaner(AbstractTask):
 
         await asyncio.sleep(1)
 
-        # Delete reasonings
-        deleted_reasonings = await self.db_operations.delete_reasonings(self.batch_size)
-
-        if len(deleted_reasonings) > 0:
-            self.logger.debug(
-                "Reasonings deleted", extra={"deleted_count": len(deleted_reasonings)}
-            )
-
-        await asyncio.sleep(1)
-
         # Delete agent run logs
         deleted_agent_run_logs = await self.db_operations.delete_agent_run_logs(self.batch_size)
 

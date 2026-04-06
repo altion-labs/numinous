@@ -17,7 +17,7 @@ from neurons.validator.models.prediction import PredictionsModel
 from neurons.validator.numinous_client.client import NuminousClient
 from neurons.validator.sandbox import SandboxManager
 from neurons.validator.sandbox.models import SandboxErrorType
-from neurons.validator.tasks.run_agents import RunAgents
+from neurons.validator.tasks.run_agents import MAX_TIMEOUT_RETRIES, RunAgents
 from neurons.validator.utils.common.interval import get_interval_start_minutes
 from neurons.validator.utils.if_metagraph import IfMetagraph
 from neurons.validator.utils.logger.logger import NuminousLogger
@@ -2039,6 +2039,7 @@ class TestRunAgentsCreateAgentRun:
         assert run.status == AgentRunStatus.INTERNAL_AGENT_ERROR
         assert run.is_final is True
 
+    @patch("neurons.validator.tasks.run_agents.MAX_TIMEOUT_RETRIES", 2)
     async def test_create_agent_run_sandbox_timeout_not_final(
         self,
         mock_db_operations,
@@ -2079,7 +2080,9 @@ class TestRunAgentsCreateAgentRun:
         mock_logger,
         sample_agent,
     ):
-        mock_db_operations.count_runs_for_event_and_agent = AsyncMock(return_value=2)
+        mock_db_operations.count_runs_for_event_and_agent = AsyncMock(
+            return_value=MAX_TIMEOUT_RETRIES
+        )
 
         task = RunAgents(
             interval_seconds=600.0,
@@ -2185,6 +2188,7 @@ class TestRunAgentsRunCreation:
         # Verify prediction was stored
         mock_db_operations.upsert_predictions.assert_called_once()
 
+    @patch("neurons.validator.tasks.run_agents.MAX_TIMEOUT_RETRIES", 2)
     async def test_creates_run_on_timeout(
         self,
         mock_db_operations,

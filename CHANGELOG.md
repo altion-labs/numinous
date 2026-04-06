@@ -1,5 +1,13 @@
 # Release Notes
 
+## [2.1.6] - 2026-04-06
+- **Gateway**: Enable numinous-signals gateway routes on SIGNALS track
+- **Sandbox**: Reduce retries on sandbox timeout
+
+## [2.1.5] - 2026-04-03
+- **Scoring**: Fix crash when multi-track miners have failed runs on a different track than their predictions, causing ghost track groups with zero-weight intervals
+- **Scoring**: Per-event error isolation — one bad event no longer blocks the entire scoring queue
+
 ## [2.1.4] - 2026-03-30
 - **Tracks**: Miners can now participate in multiple tracks simultaneously, each with its own agent, scoring pool, and weights. Upload, test, link services, and list agents per track via `--track` flag or interactive prompt.
 - **Sandbox**: Per-track endpoint filtering — each track defines which gateway endpoints agents can access
