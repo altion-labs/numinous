@@ -1123,8 +1123,7 @@ class TestScoring:
                 track="MAIN",
                 miner_uid=1,
                 latest_prediction=0.8,
-                interval_start_minutes=event_cutoff_start_minutes
-                - AGGREGATION_INTERVAL_LENGTH_MINUTES,
+                interval_start_minutes=scoring_window_start_minutes,
                 interval_agg_prediction=0.8,
                 interval_count=1,
                 submitted=base_time,
