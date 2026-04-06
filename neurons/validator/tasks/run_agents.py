@@ -12,6 +12,7 @@ from neurons.validator.models.event import EventsModel
 from neurons.validator.models.miner_agent import MinerAgentsModel
 from neurons.validator.models.numinous_client import CreateAgentRunRequest
 from neurons.validator.models.prediction import PredictionsModel
+from neurons.validator.models.reasoning import MAX_REASONING_CHARS, MISSING_REASONING_PREFIX
 from neurons.validator.numinous_client.client import NuminousClient
 from neurons.validator.sandbox import SandboxManager
 from neurons.validator.sandbox.models import SandboxErrorType
@@ -21,7 +22,7 @@ from neurons.validator.utils.logger.logger import NuminousLogger
 
 TITLE_SEPARATOR = " ==Further Information==: "
 MAX_LOG_CHARS = 25_000
-MAX_TIMEOUT_RETRIES = 3
+MAX_TIMEOUT_RETRIES = 1
 
 
 class RunAgents(AbstractTask):
@@ -421,6 +422,32 @@ class RunAgents(AbstractTask):
             is_final=is_final,
         )
 
+    async def _store_reasoning(
+        self,
+        run_id: str,
+        run_status: AgentRunStatus,
+        result: dict | None,
+    ) -> None:
+        if run_status == AgentRunStatus.SUCCESS:
+            raw_reasoning = (
+                result.get("output", {}).get("reasoning") if isinstance(result, dict) else None
+            )
+            if raw_reasoning:
+                reasoning_text = str(raw_reasoning)[:MAX_REASONING_CHARS]
+            else:
+                reasoning_text = f"{MISSING_REASONING_PREFIX} - {run_status.value}]"
+        else:
+            reasoning_text = f"{MISSING_REASONING_PREFIX} - {run_status.value}]"
+
+        try:
+            await self.db_operations.insert_reasoning(run_id, reasoning_text)
+        except Exception as e:
+            self.logger.error(
+                "Failed to store reasoning",
+                extra={"run_id": run_id, "error": str(e)},
+                exc_info=True,
+            )
+
     async def execute_agent_for_event(
         self, event: EventsModel, agent: MinerAgentsModel, interval_start_minutes: int
     ) -> None:
@@ -530,6 +557,9 @@ class RunAgents(AbstractTask):
                 extra={"run_id": run_id, "error": str(e), "log_content": logs},
                 exc_info=True,
             )
+
+        if agent_run.is_final:
+            await self._store_reasoning(run_id, run_status, result)
 
         if run_status == AgentRunStatus.SUCCESS and prediction_value is not None:
             await self.store_prediction(

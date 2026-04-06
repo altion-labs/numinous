@@ -15,6 +15,7 @@ from neurons.miner.scripts.link_chutes import link_chutes_impl
 from neurons.miner.scripts.link_desearch import link_desearch_impl
 from neurons.miner.scripts.link_lightning_rod import link_lightning_rod_impl
 from neurons.miner.scripts.link_lunar_crush import link_lunar_crush_impl
+from neurons.miner.scripts.link_numinous_signals import link_numinous_signals_impl
 from neurons.miner.scripts.link_openai import link_openai_impl
 from neurons.miner.scripts.link_openrouter import link_openrouter_impl
 from neurons.miner.scripts.link_perplexity import link_perplexity_impl
@@ -41,9 +42,10 @@ def services():
       numi services link openrouter   # Link OpenRouter directly
       numi services link perplexity   # Link Perplexity directly
       numi services link vericore     # Link Vericore directly
-      numi services link lunar-crush     # Link LunarCrush directly
-      numi services link lightning-rod   # Link Lightning Rod directly
-      numi services unlink <name>        # Unlink a service
+      numi services link lunar-crush        # Link LunarCrush directly
+      numi services link lightning-rod      # Link Lightning Rod directly
+      numi services link numinous-signals   # Link Numinous Signals directly
+      numi services unlink <name>           # Unlink a service
 
     \b
     Examples:
@@ -56,6 +58,7 @@ def services():
       numi services link perplexity
       numi services link vericore
       numi services link lightning-rod
+      numi services link numinous-signals
       numi services unlink chutes
     """
     pass
@@ -198,19 +201,21 @@ def link(
       - vericore: Link Vericore API key
       - lunar-crush: Link LunarCrush API key
       - lightning-rod: Link Lightning Rod API key
+      - numinous-signals: Link Numinous Signals API key
 
     \b
     Examples:
-      numi services link                  # Interactive mode
-      numi services link desearch         # Link Desearch directly
-      numi services link chutes           # Link Chutes directly
-      numi services link openai           # Link OpenAI directly
-      numi services link openrouter       # Link OpenRouter directly
-      numi services link perplexity       # Link Perplexity directly
-      numi services link vericore         # Link Vericore directly
-      numi services link lunar-crush      # Link LunarCrush directly
-      numi services link lightning-rod    # Link Lightning Rod directly
-      numi services link chutes -t SIGNAL # Link for SIGNAL track
+      numi services link                      # Interactive mode
+      numi services link desearch             # Link Desearch directly
+      numi services link chutes               # Link Chutes directly
+      numi services link openai               # Link OpenAI directly
+      numi services link openrouter           # Link OpenRouter directly
+      numi services link perplexity           # Link Perplexity directly
+      numi services link vericore             # Link Vericore directly
+      numi services link lunar-crush          # Link LunarCrush directly
+      numi services link lightning-rod        # Link Lightning Rod directly
+      numi services link numinous-signals     # Link Numinous Signals directly
+      numi services link chutes -t SIGNAL     # Link for SIGNAL track
     """
     if not service_name:
         console.print()
@@ -225,6 +230,7 @@ def link(
                 "vericore",
                 "lunar-crush",
                 "lightning-rod",
+                "numinous-signals",
             ],
             default="desearch",
         )
@@ -252,6 +258,8 @@ def link(
         link_lunar_crush_impl(wallet, hotkey, env, wallet_path, track)
     elif service_name == "lightning-rod":
         link_lightning_rod_impl(wallet, hotkey, env, wallet_path, track)
+    elif service_name == "numinous-signals":
+        link_numinous_signals_impl(wallet, hotkey, env, wallet_path, track)
     else:
         console.print(f"[red]✗ Unknown service:[/red] {service_name}")
         raise click.Abort()

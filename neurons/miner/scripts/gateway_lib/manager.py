@@ -1,3 +1,4 @@
+import socket
 import subprocess
 import time
 from pathlib import Path
@@ -7,8 +8,15 @@ from rich.console import Console
 
 console = Console()
 
-GATEWAY_URL = "http://localhost:8000"
+GATEWAY_PORT = 8000
+GATEWAY_URL = f"http://localhost:{GATEWAY_PORT}"
 GATEWAY_LOG_FILE = Path("gateway.log")
+
+
+def is_port_in_use(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1)
+        return s.connect_ex(("localhost", port)) == 0
 
 
 def check_gateway_health() -> bool:
@@ -21,57 +29,63 @@ def check_gateway_health() -> bool:
 
 def get_gateway_pid() -> int | None:
     try:
-        import psutil
+        result = subprocess.run(
+            ["pgrep", "-f", "neurons.miner.gateway.app"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return int(result.stdout.strip().split()[0])
+    except Exception:
+        pass
+    return None
 
-        for proc in psutil.process_iter(["pid", "name", "cmdline"]):
-            try:
-                cmdline = proc.info.get("cmdline", [])
-                if (
-                    cmdline
-                    and "uvicorn" in " ".join(cmdline)
-                    and "neurons.miner.gateway.app" in " ".join(cmdline)
-                ):
-                    return proc.info["pid"]
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
-        return None
-    except ImportError:
-        try:
-            result = subprocess.run(
-                ["pgrep", "-f", "neurons.miner.gateway.app"],
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                return int(result.stdout.strip().split()[0])
-        except Exception:
-            pass
-        return None
+
+def get_port_pid(port: int) -> int | None:
+    try:
+        result = subprocess.run(
+            ["lsof", "-ti", f"tcp:{port}"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return int(result.stdout.strip().split()[0])
+    except Exception:
+        pass
+    return None
+
+
+def _kill_pid(pid: int) -> bool:
+    try:
+        subprocess.run(["kill", str(pid)], check=True)
+        time.sleep(1)
+        return True
+    except Exception:
+        return False
+
+
+def kill_port(port: int) -> bool:
+    pid = get_port_pid(port)
+    if not pid:
+        return False
+    return _kill_pid(pid)
 
 
 def stop_gateway() -> bool:
     pid = get_gateway_pid()
     if not pid:
         return False
-
-    try:
-        import psutil
-
-        process = psutil.Process(pid)
-        process.terminate()
-        process.wait(timeout=5)
-        return True
-    except ImportError:
-        try:
-            subprocess.run(["kill", str(pid)], check=True)
-            return True
-        except Exception:
-            return False
-    except Exception:
-        return False
+    return _kill_pid(pid)
 
 
 def start_gateway() -> tuple[bool, int | None, Path | None]:
+    if is_port_in_use(GATEWAY_PORT):
+        console.print(f" [red]✗[/red] Port {GATEWAY_PORT} is already in use by another process.")
+        console.print(
+            f"  [dim]Run [cyan]numi gateway stop[/cyan] or check what is using port {GATEWAY_PORT}.[/dim]"
+        )
+        return False, None, None
+
     try:
         log_handle = open(GATEWAY_LOG_FILE, "a")
 
@@ -84,7 +98,7 @@ def start_gateway() -> tuple[bool, int | None, Path | None]:
                 "--host",
                 "0.0.0.0",
                 "--port",
-                "8000",
+                str(GATEWAY_PORT),
             ],
             stdout=log_handle,
             stderr=subprocess.STDOUT,
@@ -92,7 +106,7 @@ def start_gateway() -> tuple[bool, int | None, Path | None]:
         )
 
         console.print("  [cyan]Starting gateway...[/cyan]", end="")
-        for i in range(10):
+        for _ in range(10):
             time.sleep(0.5)
             if check_gateway_health():
                 console.print(" [green]✓[/green]")

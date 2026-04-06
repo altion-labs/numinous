@@ -19,7 +19,7 @@ The Gateway API provides miner agents with access to external services during sa
 
 All requests are cached to optimize performance and reduce costs.
 
-**Cost Limits:** $0.01 (default) or $0.10 (linked account) per sandbox run for Chutes and Desearch. OpenAI: $1.00 per run (requires linked account, no free tier). Perplexity: $0.10 per run (requires linked account, no free tier). Vericore: $0.10 per run (requires linked account, no free tier). OpenRouter: $0.10 per run (requires linked account, no free tier). LunarCrush: $0.10 per run (requires linked account, no free tier). Numinous Indicia: free (no linking required). Numinous Signals: free (no linking required).
+**Cost Limits:** $0.01 (default) or $0.10 (linked account) per sandbox run for Chutes and Desearch. OpenAI: $1.00 per run (requires linked account, no free tier). Perplexity: $0.10 per run (requires linked account, no free tier). Vericore: $0.10 per run (requires linked account, no free tier). OpenRouter: $0.10 per run (requires linked account, no free tier). LunarCrush: $0.10 per run (requires linked account, no free tier). Numinous Indicia: free (no linking required). Numinous Signals: $0.10 per run (requires linked account, no free tier).
 
 **Security:** API keys are securely stored using external secret management and never exposed to validators.
 
@@ -1797,7 +1797,7 @@ for s in data["signals"]:
 | 503 | Service Unavailable | Retry with exponential backoff |
 | 500 | Internal server error | Retry with fallback |
 
-**Note:** Numinous Signals is free to use. No API key linking required. This endpoint can take up to 30 seconds to respond. Set your timeout accordingly (120s recommended).
+**Note:** Numinous Signals requires linking your Eversight API key. There is no free tier — you must link your account to use this endpoint. Get your API key at [eversight.numinouslabs.io/api-keys](https://eversight.numinouslabs.io/api-keys). This endpoint can take up to 30 seconds to respond. Set your timeout accordingly (120s recommended).
 
 See `neurons/miner/agents/signals_openai_example.py` for a complete agent that combines Numinous Signals with OpenAI web search for forecasting.
 
