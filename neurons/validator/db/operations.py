@@ -22,6 +22,7 @@ from neurons.validator.models.prediction import (
     PredictionExportedStatus,
     PredictionsModel,
 )
+from neurons.validator.models.reasoning import ReasoningForExport
 from neurons.validator.models.score import SCORE_FIELDS, ScoresExportedStatus, ScoresModel
 from neurons.validator.utils.logger.logger import NuminousLogger
 
@@ -552,6 +553,76 @@ class DatabaseOperations:
                     updated_at = CURRENT_TIMESTAMP
             """,
             [(run_id, reasoning, False)],
+        )
+
+    async def get_reasonings_for_export(self, limit: int = 200) -> list[ReasoningForExport]:
+        rows = await self.__db_client.many(
+            """
+                SELECT
+                    r.run_id,
+                    r.reasoning,
+                    r.created_at,
+                    ar.unique_event_id AS event_id,
+                    ar.miner_uid,
+                    ar.miner_hotkey,
+                    ar.track
+                FROM reasoning r
+                JOIN agent_runs ar ON r.run_id = ar.run_id
+                WHERE r.exported = 0
+                ORDER BY r.created_at ASC
+                LIMIT ?
+            """,
+            parameters=[limit],
+            use_row_factory=True,
+        )
+
+        return self._parse_rows(model=ReasoningForExport, rows=rows)
+
+    async def mark_reasonings_as_exported(self, run_ids: list[str]) -> None:
+        if not run_ids:
+            return
+
+        placeholders = ", ".join(["?" for _ in run_ids])
+
+        await self.__db_client.update(
+            f"""
+                UPDATE reasoning
+                SET
+                    exported = 1,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE run_id IN ({placeholders})
+            """,
+            run_ids,
+        )
+
+    async def delete_reasonings(self, batch_size: int) -> Iterable[tuple[int]]:
+        return await self.__db_client.delete(
+            """
+                WITH reasonings_to_delete AS (
+                    SELECT
+                        r.ROWID
+                    FROM
+                        reasoning r
+                    WHERE
+                        r.exported = 1
+                        AND datetime(r.created_at) < datetime(CURRENT_TIMESTAMP, '-7 day')
+                    ORDER BY
+                        r.ROWID ASC
+                    LIMIT ?
+                )
+                DELETE FROM
+                    reasoning
+                WHERE
+                    ROWID IN (
+                        SELECT
+                            ROWID
+                        FROM
+                            reasonings_to_delete
+                    )
+                RETURNING
+                    ROWID
+            """,
+            [batch_size],
         )
 
     async def get_events_for_scoring(self, max_events=1000) -> list[EventsModel]:
@@ -1114,10 +1185,13 @@ class DatabaseOperations:
                         agent_runs ar
                     LEFT JOIN
                         agent_run_logs arl ON ar.run_id = arl.run_id
+                    LEFT JOIN
+                        reasoning re ON ar.run_id = re.run_id
                     WHERE
                         ar.exported = ?
                         AND datetime(ar.created_at) < datetime(CURRENT_TIMESTAMP, '-7 day')
                         AND arl.run_id IS NULL
+                        AND re.run_id IS NULL
                     ORDER BY
                         ar.ROWID ASC
                     LIMIT ?

@@ -6,5 +6,6 @@ TRACK_ALLOWED_PREFIXES: dict[str, list[str]] = {
         "/api/gateway/lunar-crush/",
         "/api/gateway/lightning-rod/",
         "/api/gateway/numinous-signals/",
+        "/api/gateway/unusual-whales/",
     ],
 }

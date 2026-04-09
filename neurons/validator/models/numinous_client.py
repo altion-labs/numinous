@@ -28,11 +28,16 @@ from neurons.validator.models.lunar_crush import (
     LunarCrushWhatsupResponse,
 )
 from neurons.validator.models.numinous_indicia import IndiciaSignalsResponse
-from neurons.validator.models.numinous_signals import SignalsResponse
+from neurons.validator.models.numinous_signals import (
+    CausalDriversResponse,
+    DeepResearchReportResponse,
+    SignalsResponse,
+)
 from neurons.validator.models.openai import OpenAIResponse
 from neurons.validator.models.openrouter import OpenRouterCompletion
 from neurons.validator.models.perplexity import PerplexityCompletion
 from neurons.validator.models.track import TrackEnum
+from neurons.validator.models.unusual_whales import NewsHeadlinesResponse
 from neurons.validator.models.vericore import VericoreResponse
 
 
@@ -165,6 +170,24 @@ class GetAgentsResponse(BaseModel):
 class PostAgentLogsRequestBody(BaseModel):
     run_id: UUID
     log_content: str = Field(..., max_length=30_000)
+
+
+class MinerReasoningSubmission(BaseModel):
+    event_id: str
+    miner_uid: int
+    miner_hotkey: str
+    track: TrackEnum
+    validator_uid: int
+    validator_hotkey: str
+    run_id: UUID
+    reasoning: str = Field(..., max_length=10_000)
+    submitted_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PostReasoningRequestBody(BaseModel):
+    reasonings: typing.List[MinerReasoningSubmission] = Field(..., min_length=1)
 
 
 class GatewayCall(BaseModel):
@@ -530,6 +553,41 @@ class NuminousSignalsRequest(GatewayCall):
 
 
 class GatewayNuminousSignalsResponse(SignalsResponse, GatewayCallResponse):
+    pass
+
+
+class CausalDriversRequest(GatewayCall):
+    event_id: str = Field(..., description="Event ID to look up causal drivers for")
+    topic: str = Field(default="geopolitics", description="Topic for causal graph lookup")
+
+
+class GatewayCausalDriversResponse(CausalDriversResponse, GatewayCallResponse):
+    pass
+
+
+class DeepResearchReportRequest(GatewayCall):
+    event_id: typing.Optional[str] = Field(None, description="Event ID to match report")
+    polymarket_market_id: typing.Optional[str] = Field(
+        None, description="Polymarket market/condition ID"
+    )
+    title: typing.Optional[str] = Field(None, description="Market title for fuzzy matching")
+    topics: typing.Optional[list[str]] = Field(None, description="Topics to narrow title matching")
+
+
+class GatewayDeepResearchReportResponse(DeepResearchReportResponse, GatewayCallResponse):
+    pass
+
+
+class UnusualWhalesHeadlinesRequest(GatewayCall):
+    sources: typing.Optional[str] = Field(None, description="Comma-separated news sources")
+    search_term: typing.Optional[str] = Field(None, description="Search term to filter headlines")
+    ticker: typing.Optional[str] = Field(None, description="Ticker symbol to filter headlines")
+    major_only: typing.Optional[bool] = Field(None, description="Only return major headlines")
+    limit: int = Field(50, ge=1, le=200, description="Number of headlines per page")
+    page: int = Field(0, ge=0, description="Page number for pagination")
+
+
+class GatewayUnusualWhalesHeadlinesResponse(NewsHeadlinesResponse, GatewayCallResponse):
     pass
 
 

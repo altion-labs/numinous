@@ -3,7 +3,10 @@ from datetime import datetime, timedelta, timezone
 from neurons.validator.db.client import DatabaseClient
 from neurons.validator.db.operations import DatabaseOperations
 from neurons.validator.db.tests.test_utils import TestDbOperationsBase
+from neurons.validator.models.agent_runs import AgentRunsModel, AgentRunStatus
 from neurons.validator.models.event import EventsModel, EventStatus
+from neurons.validator.models.miner_agent import MinerAgentsModel
+from neurons.validator.models.reasoning import ReasoningForExport
 from neurons.validator.models.score import ScoresModel
 
 
@@ -328,3 +331,188 @@ class TestDbOperationsPart3(TestDbOperationsBase):
         result = await db_operations.get_events(unique_event_ids=unique_event_ids)
 
         assert len(result) == 0
+
+    async def _setup_agent_run(
+        self,
+        db_operations: DatabaseOperations,
+        run_id: str,
+        unique_event_id: str,
+        miner_uid: int,
+        miner_hotkey: str,
+    ) -> None:
+        event = EventsModel(
+            unique_event_id=unique_event_id,
+            event_id=f"event_{unique_event_id}",
+            market_type="market_type",
+            event_type="type",
+            description="Test event",
+            outcome=None,
+            status=EventStatus.PENDING,
+            metadata="{}",
+            created_at="2024-01-01T00:00:00+00:00",
+            cutoff="2024-12-31T23:59:59+00:00",
+        )
+        await db_operations.upsert_events([event])
+
+        version_id = f"v-{run_id}"
+        agent = MinerAgentsModel(
+            version_id=version_id,
+            miner_uid=miner_uid,
+            miner_hotkey=miner_hotkey,
+            track="MAIN",
+            agent_name="TestAgent",
+            version_number=1,
+            file_path=f"/data/agents/{miner_uid}/test.py",
+            pulled_at=datetime(2024, 1, 1, 10, 0, 0, tzinfo=timezone.utc),
+            created_at=datetime(2024, 1, 1, 9, 0, 0, tzinfo=timezone.utc),
+        )
+        await db_operations.upsert_miner_agents([agent])
+
+        run = AgentRunsModel(
+            run_id=run_id,
+            unique_event_id=unique_event_id,
+            agent_version_id=version_id,
+            miner_uid=miner_uid,
+            miner_hotkey=miner_hotkey,
+            track="MAIN",
+            status=AgentRunStatus.SUCCESS,
+            exported=False,
+            is_final=True,
+        )
+        await db_operations.upsert_agent_runs([run])
+
+    async def test_insert_reasoning(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        await db_operations.insert_reasoning("run_1", "Test reasoning text")
+
+        rows = await db_client.many("SELECT run_id, reasoning, exported FROM reasoning")
+
+        assert len(rows) == 1
+        assert rows[0] == ("run_1", "Test reasoning text", 0)
+
+    async def test_insert_reasoning_upsert(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        await db_operations.insert_reasoning("run_1", "Original reasoning")
+        await db_operations.insert_reasoning("run_1", "Updated reasoning")
+
+        rows = await db_client.many("SELECT run_id, reasoning FROM reasoning")
+
+        assert len(rows) == 1
+        assert rows[0] == ("run_1", "Updated reasoning")
+
+    async def test_get_reasonings_for_export(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        await self._setup_agent_run(db_operations, "run_1", "event_1", 10, "hotkey_1")
+        await self._setup_agent_run(db_operations, "run_2", "event_2", 20, "hotkey_2")
+
+        await db_operations.insert_reasoning("run_1", "Reasoning 1")
+        await db_operations.insert_reasoning("run_2", "[NO_REASONING - SUCCESS]")
+
+        result = await db_operations.get_reasonings_for_export(limit=100)
+
+        assert len(result) == 2
+        assert all(isinstance(r, ReasoningForExport) for r in result)
+
+        assert result[0].run_id == "run_1"
+        assert result[0].reasoning == "Reasoning 1"
+        assert result[0].event_id == "event_1"
+        assert result[0].miner_uid == 10
+        assert result[0].miner_hotkey == "hotkey_1"
+        assert result[0].track == "MAIN"
+
+        assert result[1].run_id == "run_2"
+        assert result[1].reasoning == "[NO_REASONING - SUCCESS]"
+        assert result[1].event_id == "event_2"
+
+    async def test_get_reasonings_for_export_empty(self, db_operations: DatabaseOperations):
+        result = await db_operations.get_reasonings_for_export(limit=100)
+        assert len(result) == 0
+
+    async def test_get_reasonings_for_export_skips_exported(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        await self._setup_agent_run(db_operations, "run_1", "event_1", 10, "hotkey_1")
+        await self._setup_agent_run(db_operations, "run_2", "event_2", 20, "hotkey_2")
+
+        await db_operations.insert_reasoning("run_1", "Reasoning 1")
+        await db_operations.insert_reasoning("run_2", "Reasoning 2")
+
+        await db_operations.mark_reasonings_as_exported(run_ids=["run_1"])
+
+        result = await db_operations.get_reasonings_for_export(limit=100)
+
+        assert len(result) == 1
+        assert result[0].run_id == "run_2"
+
+    async def test_mark_reasonings_as_exported(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        await db_operations.insert_reasoning("run_1", "Reasoning 1")
+        await db_operations.insert_reasoning("run_2", "Reasoning 2")
+        await db_operations.insert_reasoning("run_3", "Reasoning 3")
+
+        await db_operations.mark_reasonings_as_exported(run_ids=["run_1", "run_3"])
+
+        rows = await db_client.many("SELECT run_id, exported FROM reasoning ORDER BY run_id")
+
+        assert rows == [("run_1", 1), ("run_2", 0), ("run_3", 1)]
+
+    async def test_mark_reasonings_as_exported_empty_list(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        await db_operations.insert_reasoning("run_1", "Reasoning 1")
+
+        await db_operations.mark_reasonings_as_exported(run_ids=[])
+
+        rows = await db_client.many("SELECT exported FROM reasoning")
+        assert rows == [(0,)]
+
+    async def test_delete_reasonings(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        await db_operations.insert_reasoning("run_old", "Old reasoning")
+        await db_operations.insert_reasoning("run_new", "New reasoning")
+
+        await db_operations.mark_reasonings_as_exported(run_ids=["run_old", "run_new"])
+
+        # Backdate the old one
+        await db_client.update(
+            """
+                UPDATE reasoning
+                SET created_at = datetime(CURRENT_TIMESTAMP, '-8 day')
+                WHERE run_id = ?
+            """,
+            ["run_old"],
+        )
+
+        deleted = await db_operations.delete_reasonings(batch_size=100)
+
+        assert len(deleted) == 1
+
+        rows = await db_client.many("SELECT run_id FROM reasoning")
+        assert rows == [("run_new",)]
+
+    async def test_delete_reasonings_skips_unexported(
+        self, db_operations: DatabaseOperations, db_client: DatabaseClient
+    ):
+        await db_operations.insert_reasoning("run_1", "Reasoning 1")
+
+        # Backdate but don't export
+        await db_client.update(
+            """
+                UPDATE reasoning
+                SET created_at = datetime(CURRENT_TIMESTAMP, '-8 day')
+                WHERE run_id = ?
+            """,
+            ["run_1"],
+        )
+
+        deleted = await db_operations.delete_reasonings(batch_size=100)
+
+        assert len(deleted) == 0
+
+        rows = await db_client.many("SELECT run_id FROM reasoning")
+        assert rows == [("run_1",)]

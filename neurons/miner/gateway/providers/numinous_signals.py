@@ -1,6 +1,10 @@
 import aiohttp
 
-from neurons.validator.models.numinous_signals import SignalsResponse
+from neurons.validator.models.numinous_signals import (
+    CausalDriversResponse,
+    DeepResearchReportResponse,
+    SignalsResponse,
+)
 
 DEFAULT_BASE_URL = "https://signals.numinouslabs.io"
 DEFAULT_TIMEOUT = 120.0
@@ -48,3 +52,41 @@ class NuminousSignalsClient:
                 response.raise_for_status()
                 data = await response.json()
                 return SignalsResponse.model_validate(data)
+
+    async def get_causal_drivers(
+        self,
+        event_id: str,
+        topic: str = "geopolitics",
+    ) -> CausalDriversResponse:
+        body: dict = {"event_id": event_id, "topic": topic}
+
+        url = f"{self.__base_url}/api/v1/causal-drivers/drivers"
+        async with aiohttp.ClientSession(timeout=self.__timeout, headers=self.__headers) as session:
+            async with session.post(url, json=body) as response:
+                response.raise_for_status()
+                data = await response.json()
+                return CausalDriversResponse.model_validate(data)
+
+    async def get_deep_research_report(
+        self,
+        event_id: str | None = None,
+        polymarket_market_id: str | None = None,
+        title: str | None = None,
+        topics: list[str] | None = None,
+    ) -> DeepResearchReportResponse:
+        body: dict = {}
+        if event_id is not None:
+            body["event_id"] = event_id
+        if polymarket_market_id is not None:
+            body["polymarket_market_id"] = polymarket_market_id
+        if title is not None:
+            body["title"] = title
+        if topics is not None:
+            body["topics"] = topics
+
+        url = f"{self.__base_url}/api/v1/deep-research/report"
+        async with aiohttp.ClientSession(timeout=self.__timeout, headers=self.__headers) as session:
+            async with session.post(url, json=body) as response:
+                response.raise_for_status()
+                data = await response.json()
+                return DeepResearchReportResponse.model_validate(data)

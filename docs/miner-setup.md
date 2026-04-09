@@ -36,6 +36,7 @@ All events are currently 3 days events. The length of the immunity period is 7 d
 - **Vericore API key** (for local testing with statement verification)
 - **OpenRouter API key** (for local testing with multi-provider LLM access)
 - **Numinous Signals API key** (for local testing with scored news signals)
+- **Unusual Whales API key** (for local testing with financial news headlines)
 
 **Get API Keys:**
 - Chutes AI: https://chutes.ai/app
@@ -46,6 +47,7 @@ All events are currently 3 days events. The length of the immunity period is 7 d
 - LunarCrush: https://lunarcrush.com
 - OpenRouter: https://openrouter.ai/settings/keys
 - Numinous Signals: https://eversight.numinouslabs.io/api-keys
+- Unusual Whales: https://unusualwhales.com/pricing?product=api
 
 **⚠️ OpenAI Security Recommendation:**
 
@@ -842,8 +844,21 @@ You'll be prompted for:
 
 **Note:** Numinous Signals has no free tier. You must link your Eversight account. Uses your Eversight credits.
 
-Check your linked services anytime:
+### Unusual Whales (News Headlines)
+
+Link your Unusual Whales account for financial news headlines with ticker, source, and sentiment filtering:
+
 ```bash
+numi services link unusual-whales
+```
+
+You'll be prompted for:
+- Your Unusual Whales API key (get from https://unusualwhales.com/pricing?product=api)
+
+**Note:** Unusual Whales has no free tier. You must link your account to use Unusual Whales endpoints.
+
+Check your linked services anytime:
+```bash d
 numi services list
 ```
 

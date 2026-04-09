@@ -15,6 +15,7 @@ API_KEYS = [
     ("VERICORE_API_KEY", "Vericore", "https://vericore.ai"),
     ("OPENROUTER_API_KEY", "OpenRouter", "https://openrouter.ai"),
     ("NUMINOUS_SIGNALS_API_KEY", "Numinous Signals", "https://eversight.numinouslabs.io/api-keys"),
+    ("UNUSUAL_WHALES_API_KEY", "Unusual Whales", "https://unusualwhales.com/pricing?product=api"),
 ]
 
 

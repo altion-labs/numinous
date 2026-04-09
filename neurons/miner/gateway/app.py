@@ -16,6 +16,7 @@ from neurons.miner.gateway.providers.numinous_signals import NuminousSignalsClie
 from neurons.miner.gateway.providers.openai import OpenAIClient
 from neurons.miner.gateway.providers.openrouter import OpenRouterClient
 from neurons.miner.gateway.providers.perplexity import PerplexityClient
+from neurons.miner.gateway.providers.unusual_whales import UnusualWhalesClient
 from neurons.miner.gateway.providers.vericore import VericoreClient
 from neurons.validator.models import numinous_client as models
 from neurons.validator.models.chutes import ChuteStatus
@@ -27,12 +28,15 @@ from neurons.validator.models.lunar_crush import calculate_cost as calculate_lun
 from neurons.validator.models.numinous_indicia import (
     calculate_cost as calculate_numinous_indicia_cost,
 )
+from neurons.validator.models.numinous_signals import calculate_causal_drivers_cost
 from neurons.validator.models.numinous_signals import (
     calculate_cost as calculate_numinous_signals_cost,
 )
+from neurons.validator.models.numinous_signals import calculate_deep_research_cost
 from neurons.validator.models.openai import calculate_cost as calculate_openai_cost
 from neurons.validator.models.openrouter import calculate_cost as calculate_openrouter_cost
 from neurons.validator.models.perplexity import calculate_cost as calculate_perplexity_cost
+from neurons.validator.models.unusual_whales import calculate_cost as calculate_unusual_whales_cost
 from neurons.validator.models.vericore import calculate_cost as calculate_vericore_cost
 
 logger = logging.getLogger(__name__)
@@ -577,6 +581,93 @@ async def numinous_signals_compute(
 
     return models.GatewayNuminousSignalsResponse(
         **result.model_dump(), cost=calculate_numinous_signals_cost()
+    )
+
+
+@gateway_router.post(
+    "/numinous-signals/causal-drivers/drivers",
+    response_model=models.GatewayCausalDriversResponse,
+)
+@cached_gateway_call
+@handle_provider_errors("NuminousSignals")
+async def numinous_signals_causal_drivers(
+    request: models.CausalDriversRequest,
+) -> models.GatewayCausalDriversResponse:
+    api_key = os.getenv("NUMINOUS_SIGNALS_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="NUMINOUS_SIGNALS_API_KEY not configured",
+        )
+
+    client = NuminousSignalsClient(api_key=api_key)
+    result = await client.get_causal_drivers(
+        event_id=request.event_id,
+        topic=request.topic,
+    )
+
+    return models.GatewayCausalDriversResponse(
+        **result.model_dump(), cost=float(calculate_causal_drivers_cost())
+    )
+
+
+@gateway_router.post(
+    "/numinous-signals/deep-research/report",
+    response_model=models.GatewayDeepResearchReportResponse,
+)
+@cached_gateway_call
+@handle_provider_errors("NuminousSignals")
+async def numinous_signals_deep_research(
+    request: models.DeepResearchReportRequest,
+) -> models.GatewayDeepResearchReportResponse:
+    api_key = os.getenv("NUMINOUS_SIGNALS_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="NUMINOUS_SIGNALS_API_KEY not configured",
+        )
+
+    client = NuminousSignalsClient(api_key=api_key)
+    result = await client.get_deep_research_report(
+        event_id=request.event_id,
+        polymarket_market_id=request.polymarket_market_id,
+        title=request.title,
+        topics=request.topics,
+    )
+
+    return models.GatewayDeepResearchReportResponse(
+        **result.model_dump(), cost=float(calculate_deep_research_cost())
+    )
+
+
+@gateway_router.post(
+    "/unusual-whales/news/headlines",
+    response_model=models.GatewayUnusualWhalesHeadlinesResponse,
+)
+@cached_gateway_call
+@handle_provider_errors("UnusualWhales")
+async def unusual_whales_get_news_headlines(
+    request: models.UnusualWhalesHeadlinesRequest,
+) -> models.GatewayUnusualWhalesHeadlinesResponse:
+    api_key = os.getenv("UNUSUAL_WHALES_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNUSUAL_WHALES_API_KEY not configured",
+        )
+
+    client = UnusualWhalesClient(api_key=api_key)
+    result = await client.get_news_headlines(
+        sources=request.sources,
+        search_term=request.search_term,
+        ticker=request.ticker,
+        major_only=request.major_only,
+        limit=request.limit,
+        page=request.page,
+    )
+
+    return models.GatewayUnusualWhalesHeadlinesResponse(
+        **result.model_dump(), cost=calculate_unusual_whales_cost()
     )
 
 

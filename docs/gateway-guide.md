@@ -15,11 +15,12 @@ The Gateway API provides miner agents with access to external services during sa
 - **OpenRouter**: Model router with access to hundreds of LLM models (Claude, Gemini, Llama, etc.)
 - **LunarCrush**: Social media intelligence and sentiment data for any topic
 - **Numinous Indicia**: Geopolitical and OSINT signals intelligence (X/Twitter, LiveUAMap)
-- **Numinous Signals**: Event-relevant news signals scored by relevance and impact
+- **Numinous Signals**: Event-relevant news signals scored by relevance and impact, causal driver graphs, and deep research reports
+- **Unusual Whales**: Financial news headlines with filtering by source, ticker, and sentiment
 
 All requests are cached to optimize performance and reduce costs.
 
-**Cost Limits:** $0.01 (default) or $0.10 (linked account) per sandbox run for Chutes and Desearch. OpenAI: $1.00 per run (requires linked account, no free tier). Perplexity: $0.10 per run (requires linked account, no free tier). Vericore: $0.10 per run (requires linked account, no free tier). OpenRouter: $0.10 per run (requires linked account, no free tier). LunarCrush: $0.10 per run (requires linked account, no free tier). Numinous Indicia: free (no linking required). Numinous Signals: $0.10 per run (requires linked account, no free tier).
+**Cost Limits:** $0.01 (default) or $0.10 (linked account) per sandbox run for Chutes and Desearch. OpenAI: $1.00 per run (requires linked account, no free tier). Perplexity: $0.10 per run (requires linked account, no free tier). Vericore: $0.10 per run (requires linked account, no free tier). OpenRouter: $0.10 per run (requires linked account, no free tier). LunarCrush: $0.10 per run (requires linked account, no free tier). Numinous Indicia: free (no linking required). Numinous Signals: $0.10 per run (requires linked account, no free tier). Unusual Whales: $0.10 per run (requires linked account, no free tier).
 
 **Security:** API keys are securely stored using external secret management and never exposed to validators.
 
@@ -1801,6 +1802,310 @@ for s in data["signals"]:
 
 See `neurons/miner/agents/signals_openai_example.py` for a complete agent that combines Numinous Signals with OpenAI web search for forecasting.
 
+### POST /api/gateway/numinous-signals/causal-drivers/drivers
+
+Look up causal drivers for an event from the precomputed causal graph. Returns other events that drive (influence) or are driven by the given event, with direction, strength, and reasoning.
+
+**URL:** `{SANDBOX_PROXY_URL}/api/gateway/numinous-signals/causal-drivers/drivers`
+
+**Request Body:**
+```json
+{
+  "run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "event_id": "b1e4a94c-0dbb-4ac5-82cd-6a5928a6aa94",
+  "topic": "geopolitics"
+}
+```
+
+**Parameters:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `run_id` | string (UUID) | Yes | - | Execution tracking ID from environment |
+| `event_id` | string | Yes | - | Event ID to look up causal drivers for |
+| `topic` | string | No | `"geopolitics"` | Topic for causal graph lookup |
+
+**Response:**
+```json
+{
+  "event_id": "b1e4a94c-0dbb-4ac5-82cd-6a5928a6aa94",
+  "title": "Will Ukraine announce enhanced defense measures by April 30?",
+  "is_target": true,
+  "drivers": [
+    {
+      "event_id": "abc123",
+      "title": "Russia military action against Kyiv by March 27",
+      "direction": "increases",
+      "strength": "strong",
+      "reasoning": "Direct military escalation would trigger defensive response.",
+      "markets": [
+        {
+          "question": "Russia strikes Kyiv?",
+          "yes_price": 0.35,
+          "condition_id": "0xabc..."
+        }
+      ],
+      "cluster_source": null
+    }
+  ],
+  "drives": [
+    {
+      "event_id": "def456",
+      "title": "Will NATO increase eastern flank deployments?",
+      "direction": "increases",
+      "strength": "moderate",
+      "reasoning": "Enhanced Ukrainian defense signals broader NATO response."
+    }
+  ],
+  "found": true,
+  "cost": 0.0
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `event_id` | string | The queried event ID |
+| `title` | string | Event title from the causal graph |
+| `is_target` | boolean | Whether this event is a target node in the graph |
+| `drivers` | array | Events that causally influence this event |
+| `drivers[].direction` | string | `increases` or `decreases` |
+| `drivers[].strength` | string | `strong`, `moderate`, or `weak` |
+| `drivers[].reasoning` | string | Explanation of the causal link |
+| `drivers[].markets` | array | Associated Polymarket markets with prices |
+| `drives` | array | Events that this event causally influences |
+| `found` | boolean | Whether the event was found in the causal graph |
+| `cost` | float | Cost for this request ($0.00 — free) |
+
+**Example (using httpx):**
+```python
+import os
+import httpx
+
+PROXY_URL = os.getenv("SANDBOX_PROXY_URL")
+RUN_ID = os.getenv("RUN_ID")
+EVENT_ID = os.getenv("EVENT_ID")
+
+SIGNALS_URL = f"{PROXY_URL}/api/gateway/numinous-signals"
+
+response = httpx.post(
+    f"{SIGNALS_URL}/causal-drivers/drivers",
+    json={
+        "run_id": RUN_ID,
+        "event_id": EVENT_ID,
+        "topic": "geopolitics",
+    },
+    timeout=30.0,
+)
+
+data = response.json()
+if data["found"]:
+    print(f"Event: {data['title']}")
+    for driver in data.get("drivers") or []:
+        print(f"  Driver: {driver['title']} ({driver['direction']}, {driver['strength']})")
+    for driven in data.get("drives") or []:
+        print(f"  Drives: {driven['title']} ({driven['direction']}, {driven['strength']})")
+else:
+    print("Event not found in causal graph")
+```
+
+**Note:** Causal drivers requires linking your Eversight API key (same as Numinous Signals). The endpoint is free ($0.00 per call) but authentication is required. Data is precomputed and refreshed periodically. If `found` is `false`, the event is not in the current causal graph.
+
+### POST /api/gateway/numinous-signals/deep-research/report
+
+Look up a deep research report for an event. Reports are precomputed long-form analyses of storylines that map to specific markets. Matching is attempted by event ID, Polymarket condition/event ID, or fuzzy title match.
+
+**URL:** `{SANDBOX_PROXY_URL}/api/gateway/numinous-signals/deep-research/report`
+
+**Request Body:**
+```json
+{
+  "run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "event_id": "b1e4a94c-0dbb-4ac5-82cd-6a5928a6aa94"
+}
+```
+
+**Parameters:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `run_id` | string (UUID) | Yes | - | Execution tracking ID from environment |
+| `event_id` | string | No | - | Event ID (matched via event metadata) |
+| `polymarket_market_id` | string | No | - | Polymarket event ID or condition ID |
+| `title` | string | No | - | Market title for fuzzy matching |
+| `topics` | array of strings | No | - | Topics to narrow title matching (e.g. `["geopolitics"]`) |
+
+At least one of `event_id`, `polymarket_market_id`, or `title` should be provided. Matching is attempted in order: polymarket ID → event ID → title.
+
+**Response:**
+```json
+{
+  "report": "# U.S. Coercion in Latin America\n\n## Executive Summary\n...",
+  "storyline_name": "U.S. coercion in Latin America",
+  "research_focus": "Assess whether the Trump administration is preparing military strikes...",
+  "topic": "geopolitics",
+  "run_date": "2026-04-08",
+  "matched_via": "polymarket_condition_id",
+  "market_mappings": [
+    {
+      "market_title": "US strike on Colombia by December 31?",
+      "polymarket_event_id": "143633",
+      "polymarket_condition_id": "0xc6e5..."
+    }
+  ],
+  "cost": 0.0
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `report` | string | Full markdown research report (null if no match) |
+| `storyline_name` | string | Name of the storyline this report covers |
+| `research_focus` | string | Research question the report addresses |
+| `topic` | string | Topic category (e.g. `geopolitics`) |
+| `run_date` | string | Date the report was generated |
+| `matched_via` | string | How the match was found: `polymarket_event_id`, `polymarket_condition_id`, `title`, or `none` |
+| `market_mappings` | array | Markets associated with this report's storyline |
+| `cost` | float | Cost for this request ($0.00 — free) |
+
+**Example (using httpx):**
+```python
+import os
+import httpx
+
+PROXY_URL = os.getenv("SANDBOX_PROXY_URL")
+RUN_ID = os.getenv("RUN_ID")
+EVENT_ID = os.getenv("EVENT_ID")
+
+SIGNALS_URL = f"{PROXY_URL}/api/gateway/numinous-signals"
+
+response = httpx.post(
+    f"{SIGNALS_URL}/deep-research/report",
+    json={
+        "run_id": RUN_ID,
+        "event_id": EVENT_ID,
+    },
+    timeout=30.0,
+)
+
+data = response.json()
+if data["matched_via"] != "none":
+    print(f"Storyline: {data['storyline_name']}")
+    print(f"Matched via: {data['matched_via']}")
+    print(f"Report length: {len(data['report'])} chars")
+    # Use data["report"] as context for your prediction
+else:
+    print("No matching deep research report found")
+```
+
+**Note:** Deep research requires linking your Eversight API key (same as Numinous Signals). The endpoint is free ($0.00 per call) but authentication is required. Reports are precomputed and cover recent storylines (up to 7 days old). If `matched_via` is `"none"`, no report was found for the given event.
+
+---
+
+## Unusual Whales Endpoints
+
+Unusual Whales provides financial news headlines with filtering by source, ticker, and sentiment. Useful for tracking market-moving news and earnings-related events.
+
+### POST /api/gateway/unusual-whales/news/headlines
+
+Fetch financial news headlines with optional filtering.
+
+**URL:** `{SANDBOX_PROXY_URL}/api/gateway/unusual-whales/news/headlines`
+
+**Request Body:**
+```json
+{
+  "run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "ticker": "AAPL",
+  "major_only": true,
+  "limit": 20,
+  "page": 0
+}
+```
+
+**Parameters:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `run_id` | string (UUID) | Yes | - | Execution tracking ID from environment |
+| `sources` | string | No | null | Comma-separated news sources to filter by |
+| `search_term` | string | No | null | Search term to filter headlines |
+| `ticker` | string | No | null | Ticker symbol to filter headlines (e.g. `AAPL`) |
+| `major_only` | boolean | No | null | Only return major headlines |
+| `limit` | integer | No | 50 | Number of headlines per page (1-200) |
+| `page` | integer | No | 0 | Page number for pagination |
+
+**Response:**
+```json
+{
+  "headlines": [
+    {
+      "headline": "Apple Reports Record Q1 Earnings",
+      "source": "benzinga",
+      "created_at": "2026-04-08T14:30:00Z",
+      "is_major": true,
+      "sentiment": "positive",
+      "tickers": ["AAPL"],
+      "tags": ["earnings", "tech"],
+      "meta": {}
+    }
+  ],
+  "cost": 0.0001
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `headlines` | array | List of news headline objects |
+| `headlines[].headline` | string | Headline text |
+| `headlines[].source` | string | News source (e.g. `benzinga`, `reuters`) |
+| `headlines[].created_at` | string (ISO 8601) | When the headline was published |
+| `headlines[].is_major` | boolean | Whether this is a major headline |
+| `headlines[].sentiment` | string | Sentiment (`positive`, `negative`, `neutral`, or null) |
+| `headlines[].tickers` | array | Related ticker symbols |
+| `headlines[].tags` | array | Tags/categories |
+| `cost` | float | Cost for this request ($0.0001) |
+
+**Example (using httpx):**
+```python
+import os
+import httpx
+
+PROXY_URL = os.getenv("SANDBOX_PROXY_URL")
+RUN_ID = os.getenv("RUN_ID")
+
+response = httpx.post(
+    f"{PROXY_URL}/api/gateway/unusual-whales/news/headlines",
+    json={
+        "run_id": RUN_ID,
+        "ticker": "AAPL",
+        "major_only": True,
+        "limit": 20,
+    },
+    timeout=60.0,
+)
+
+result = response.json()
+for headline in result["headlines"]:
+    print(f"[{headline['sentiment']}] {headline['headline']} ({headline['source']})")
+```
+
+**Error Handling:**
+
+| Status Code | Description | Recommended Action |
+|-------------|-------------|-------------------|
+| 401 | API key not configured | Link your Unusual Whales API key |
+| 429 | Budget limit exceeded | Reduce calls per run |
+| 503 | Service Unavailable | Retry with exponential backoff |
+| 500 | Internal server error | Retry with fallback |
+
+**Note:** Unusual Whales requires linking your API key. There is no free tier — you must link your account to use this endpoint. Get your API key at [unusualwhales.com/pricing](https://unusualwhales.com/pricing?product=api).
+
 ---
 
 ## Caching
@@ -2059,6 +2364,7 @@ Logs include:
 - **Chutes AI Models:** https://chutes.ai/app
 - **Desearch AI Documentation:** https://desearch.ai/
 - **LunarCrush API:** https://lunarcrush.com/developers/api/endpoints
+- **Unusual Whales API:** https://unusualwhales.com/public-api
 - **Miner Setup Guide:** [miner-setup.md](./miner-setup.md)
 - **Subnet Rules:** [subnet-rules.md](./subnet-rules.md)
 - **Architecture Overview:** [architecture.md](./architecture.md)

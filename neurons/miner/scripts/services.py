@@ -19,6 +19,7 @@ from neurons.miner.scripts.link_numinous_signals import link_numinous_signals_im
 from neurons.miner.scripts.link_openai import link_openai_impl
 from neurons.miner.scripts.link_openrouter import link_openrouter_impl
 from neurons.miner.scripts.link_perplexity import link_perplexity_impl
+from neurons.miner.scripts.link_unusual_whales import link_unusual_whales_impl
 from neurons.miner.scripts.link_vericore import link_vericore_impl
 from neurons.miner.scripts.numinous_config import ENV_URLS
 from neurons.miner.scripts.track_utils import prompt_track_selection
@@ -45,6 +46,7 @@ def services():
       numi services link lunar-crush        # Link LunarCrush directly
       numi services link lightning-rod      # Link Lightning Rod directly
       numi services link numinous-signals   # Link Numinous Signals directly
+      numi services link unusual-whales    # Link Unusual Whales directly
       numi services unlink <name>           # Unlink a service
 
     \b
@@ -59,6 +61,7 @@ def services():
       numi services link vericore
       numi services link lightning-rod
       numi services link numinous-signals
+      numi services link unusual-whales
       numi services unlink chutes
     """
     pass
@@ -202,6 +205,7 @@ def link(
       - lunar-crush: Link LunarCrush API key
       - lightning-rod: Link Lightning Rod API key
       - numinous-signals: Link Numinous Signals API key
+      - unusual-whales: Link Unusual Whales API key
 
     \b
     Examples:
@@ -215,6 +219,7 @@ def link(
       numi services link lunar-crush          # Link LunarCrush directly
       numi services link lightning-rod        # Link Lightning Rod directly
       numi services link numinous-signals     # Link Numinous Signals directly
+      numi services link unusual-whales       # Link Unusual Whales directly
       numi services link chutes -t SIGNAL     # Link for SIGNAL track
     """
     if not service_name:
@@ -231,6 +236,7 @@ def link(
                 "lunar-crush",
                 "lightning-rod",
                 "numinous-signals",
+                "unusual-whales",
             ],
             default="desearch",
         )
@@ -260,6 +266,8 @@ def link(
         link_lightning_rod_impl(wallet, hotkey, env, wallet_path, track)
     elif service_name == "numinous-signals":
         link_numinous_signals_impl(wallet, hotkey, env, wallet_path, track)
+    elif service_name == "unusual-whales":
+        link_unusual_whales_impl(wallet, hotkey, env, wallet_path, track)
     else:
         console.print(f"[red]✗ Unknown service:[/red] {service_name}")
         raise click.Abort()
