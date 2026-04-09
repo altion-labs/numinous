@@ -1,5 +1,10 @@
 # Release Notes
 
+## [2.1.7] - 2026-04-09
+- **Integration**: Unusual Whales financial news API integration
+- **Integration**: Causal drivers and deep research report endpoints under Numinous Signals
+- **Validator**: Export reasoning to backend in batches
+
 ## [2.1.6] - 2026-04-06
 - **Gateway**: Enable numinous-signals gateway routes on SIGNALS track
 - **Sandbox**: Reduce retries on sandbox timeout

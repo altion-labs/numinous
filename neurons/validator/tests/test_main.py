@@ -136,7 +136,7 @@ class TestValidatorMain:
             mock_measure_event_loop_lag.assert_awaited_once()
 
             # Verify tasks added count
-            assert mock_scheduler.add.call_count == 14
+            assert mock_scheduler.add.call_count == 15
 
             # Verify logging
             mock_logger.info.assert_called_with(

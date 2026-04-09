@@ -49,8 +49,71 @@ class SignalsResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class DriverMarket(BaseModel):
+    question: str
+    yes_price: float
+    condition_id: str
+
+    model_config = ConfigDict(extra="allow")
+
+
+class CausalDriver(BaseModel):
+    event_id: str
+    title: str
+    direction: str
+    strength: str
+    reasoning: str
+    markets: list[DriverMarket] = []
+    cluster_source: str | None = None
+
+    model_config = ConfigDict(extra="allow")
+
+
+class CausalDriveEntry(BaseModel):
+    event_id: str
+    title: str
+    direction: str
+    strength: str
+    reasoning: str
+
+    model_config = ConfigDict(extra="allow")
+
+
+class CausalDriversResponse(BaseModel):
+    event_id: str
+    title: str | None = None
+    is_target: bool | None = None
+    drivers: list[CausalDriver] | None = None
+    drives: list[CausalDriveEntry] | None = None
+    found: bool = False
+
+    model_config = ConfigDict(extra="allow")
+
+
+class DeepResearchReportResponse(BaseModel):
+    report: str | None = None
+    storyline_name: str | None = None
+    research_focus: str | None = None
+    topic: str | None = None
+    run_date: str | None = None
+    matched_via: str | None = None
+    market_mappings: list[dict] | None = None
+
+    model_config = ConfigDict(extra="allow")
+
+
 COST_PER_CALL = Decimal("0.001")
+CAUSAL_DRIVERS_COST = Decimal("0.0")
+DEEP_RESEARCH_COST = Decimal("0.0")
 
 
 def calculate_cost() -> Decimal:
     return COST_PER_CALL
+
+
+def calculate_causal_drivers_cost() -> Decimal:
+    return CAUSAL_DRIVERS_COST
+
+
+def calculate_deep_research_cost() -> Decimal:
+    return DEEP_RESEARCH_COST

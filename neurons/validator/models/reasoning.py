@@ -8,6 +8,16 @@ MISSING_REASONING_PREFIX = "[NO_REASONING"
 MAX_REASONING_CHARS = 10_000
 
 
+class ReasoningForExport(BaseModel):
+    run_id: str
+    reasoning: str
+    created_at: Optional[datetime] = None
+    event_id: str
+    miner_uid: int
+    miner_hotkey: str
+    track: str
+
+
 class ReasoningModel(BaseModel):
     run_id: str
     reasoning: str
